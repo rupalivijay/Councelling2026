@@ -85,6 +85,46 @@ export default function Home() {
           />
         </div>
       </section>
+
+      <section className="bg-slate-900 py-24 text-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-4xl font-black mb-6 tracking-tight">Visit Our Office</h2>
+              <p className="text-slate-400 text-lg mb-8 leading-relaxed">
+                Connect with us in person for a detailed consultation. Scan the QR code to find us on Google Maps.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-4">
+                  <div className="bg-blue-600/20 p-3 rounded-2xl">
+                    <ShieldCheck className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-xl">Main Branch</h4>
+                    <p className="text-slate-400">Office No. 102, Laxmi Heights, Near Station Road, Pune - 411001</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-center lg:justify-end">
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl overflow-hidden group">
+                <img 
+                  src="/qr_code_location.png" 
+                  alt="QR Code for Location" 
+                  className="w-48 h-48 group-hover:scale-110 transition duration-500"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://placehold.co/200x200/000000/ffffff?text=QR+Code";
+                  }}
+                  referrerPolicy="no-referrer"
+                />
+                <div className="mt-4 text-center">
+                  <span className="text-slate-900 font-black text-sm uppercase tracking-widest">Scan for Location</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

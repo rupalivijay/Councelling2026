@@ -28,9 +28,12 @@ export default function AboutCounselor() {
                 <div className="relative">
                   <div className="absolute -inset-4 bg-orange-100 rounded-[2.5rem] -rotate-3" />
                   <img
-                    src="https://firebasestorage.googleapis.com/v0/b/gen-lang-client-0399691610.firebasestorage.app/o/counselor.png?alt=media"
+                    src="/counselor_portrait.png"
                     alt="Mr. Vijay Bhosale"
                     className="relative z-10 w-48 h-64 object-cover rounded-[2rem] shadow-xl border-4 border-white"
+                    onError={(e) => {
+                      e.currentTarget.src = "https://placehold.co/400x600/f97316/ffffff?text=Counselor+Vijay";
+                    }}
                   />
                 </div>
               </div>

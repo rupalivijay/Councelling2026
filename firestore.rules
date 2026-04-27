@@ -111,7 +111,8 @@ service cloud.firestore {
     }
 
     match /colleges/{collegeId} {
-      allow list, get: if isValidId(collegeId);
+      allow get: if isValidId(collegeId);
+      allow list: if true;
       allow write: if isValidId(collegeId) && isAdmin();
     }
 

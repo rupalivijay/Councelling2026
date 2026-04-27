@@ -19,14 +19,19 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = React.useState(false);
   const [user, setUser] = React.useState<FirebaseUser | null>(null);
   const [isCounselor, setIsCounselor] = React.useState(false);
+  const [isLoggingIn, setIsLoggingIn] = React.useState(false);
   const location = useLocation();
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
-        const counselorDoc = await getDoc(doc(db, 'counselors', u.uid));
-        setIsCounselor(counselorDoc.exists());
+        try {
+          const counselorDoc = await getDoc(doc(db, 'counselors', u.uid));
+          setIsCounselor(counselorDoc.exists());
+        } catch (error) {
+          console.error("Error checking counselor status:", error);
+        }
       } else {
         setIsCounselor(false);
       }
@@ -36,10 +41,17 @@ export default function Navbar() {
 
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
+    setIsLoggingIn(true);
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
+      // Fallback for iframe restrictions if popup is blocked
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+        alert("Sign-in popup was blocked or closed. Please try again or check your browser settings.");
+      }
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -112,10 +124,11 @@ export default function Navbar() {
             ) : (
               <button 
                 onClick={handleLogin}
-                className="flex items-center space-x-2 bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200"
+                disabled={isLoggingIn}
+                className="flex items-center space-x-2 bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <LogIn className="h-4 w-4" />
-                <span>Login</span>
+                <span>{isLoggingIn ? 'Signing in...' : 'Login'}</span>
               </button>
             )}
           </div>
