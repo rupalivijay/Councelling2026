@@ -100,25 +100,30 @@ export default function Home() {
                     <ShieldCheck className="h-6 w-6 text-blue-400" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-xl">Main Branch</h4>
-                    <p className="text-slate-400">Office No. 102, Laxmi Heights, Near Station Road, Pune - 411001</p>
+                    <h4 className="font-bold text-xl text-white">Main Branch</h4>
+                    <p className="text-blue-300 font-bold bg-blue-600/10 px-4 py-2 rounded-xl mt-2 border border-blue-500/20">
+                      RX 8, Gulmohar Colony, Bajajnagar, Wadgaon Ko, Waluj MIDC, 431136
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex justify-center lg:justify-end">
-              <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl overflow-hidden group">
-                <img 
-                  src="/qr_code_location.png" 
-                  alt="QR Code for Location" 
-                  className="w-48 h-48 group-hover:scale-110 transition duration-500"
-                  onError={(e) => {
-                    e.currentTarget.src = "https://placehold.co/200x200/000000/ffffff?text=QR+Code";
-                  }}
-                  referrerPolicy="no-referrer"
-                />
-                <div className="mt-4 text-center">
-                  <span className="text-slate-900 font-black text-sm uppercase tracking-widest">Scan for Location</span>
+              <div className="flex flex-col items-center">
+                <span className="text-blue-500 font-black text-xs uppercase tracking-[0.3em] mb-4">Location Map Scanner</span>
+                <div className="bg-white p-6 rounded-[3rem] shadow-2xl border border-slate-100 group">
+                  <img 
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https%3A%2F%2Fwww.google.com%2Fmaps%2Fsearch%2F%3Fapi%3D1%26query%3DRX%2B8%2BGulmohar%2BColony%2BBajajnagar%2BWadgaon%2BKo%2BWaluj%2BMIDC%2B431136" 
+                    alt="QR Code" 
+                    className="w-48 h-48 group-hover:scale-105 transition duration-500 rounded-2xl"
+                    onError={(e) => {
+                      e.currentTarget.src = "https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=https%3A%2F%2Fwww.google.com%2Fmaps%2Fsearch%2F%3Fapi%3D1%26query%3DRX%2B8%2BGulmohar%2BColony%2BBajajnagar%2BWadgaon%2BKo%2BWaluj%2BMIDC%2B431136";
+                    }}
+                  />
+                </div>
+                <div className="mt-4 flex items-center space-x-2 bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
+                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Active Google Maps Link</span>
                 </div>
               </div>
             </div>

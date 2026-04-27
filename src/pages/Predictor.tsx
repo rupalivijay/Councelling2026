@@ -30,6 +30,58 @@ export default function Predictor() {
   const [quickMatchResult, setQuickMatchResult] = React.useState<string | null>(null);
   const [rankError, setRankError] = React.useState<string | null>(null);
   const [quickMatchError, setQuickMatchError] = React.useState<string | null>(null);
+  const [showAdminModal, setShowAdminModal] = React.useState(false);
+  const [adminFormData, setAdminFormData] = React.useState({
+    id: '',
+    name: '',
+    state: 'Maharashtra',
+    city: '',
+    examType: ExamType.NEET,
+    type: 'Medical' as 'Medical' | 'Engineering',
+    quota: QuotaType.AIQ,
+    cutoffRank: {
+      [Category.GENERAL]: 0,
+      [Category.OBC]: 0,
+      [Category.SC]: 0,
+      [Category.ST]: 0,
+      [Category.EWS]: 0
+    },
+    choiceCode: '',
+    link: '',
+    fees: { tuition: 0, hostel: 0 },
+    description: ''
+  });
+
+  const handleAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminFormData.name || !adminFormData.id) {
+      alert("Please fill name and ID");
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/colleges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(adminFormData)
+      });
+      if (response.ok) {
+        alert("College added successfully!");
+        setShowAdminModal(false);
+        // Reset form
+        setAdminFormData({
+           id: '', name: '', state: 'Maharashtra', city: '', examType: ExamType.NEET, type: 'Medical', quota: QuotaType.AIQ,
+           cutoffRank: { [Category.GENERAL]: 0, [Category.OBC]: 0, [Category.SC]: 0, [Category.ST]: 0, [Category.EWS]: 0 },
+           choiceCode: '', link: '', fees: { tuition: 0, hostel: 0 }, description: ''
+        });
+      } else {
+        alert("Failed to add college.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error connecting to server.");
+    }
+  };
 
   const calculateQuickMatch = (rank: string, category: string, exam: string) => {
     if (!rank) {
@@ -147,23 +199,48 @@ export default function Predictor() {
     }
   };
 
-  const handleDownload = () => {
-    const exportData = filteredResults.map(c => ({
+  const handleDownload = async () => {
+    let dataToExport = filteredResults;
+    
+    if (dataToExport.length === 0) {
+      const confirmFull = window.confirm("No predicted colleges found for your rank. Would you like to download the full list of all available colleges instead?");
+      if (confirmFull) {
+        try {
+          const response = await fetch('/api/colleges');
+          dataToExport = await response.json();
+        } catch (err) {
+          console.error("Failed to fetch all colleges:", err);
+          alert("Could not fetch college data.");
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+
+    const exportData = dataToExport.map(c => ({
       'College Name': c.name,
       'City': c.city,
       'State': c.state,
       'Type': c.type,
+      'Exam': c.examType,
       'Quota': c.quota,
-      'General Cutoff': c.cutoffRank[Category.GENERAL],
-      'OBC Cutoff': c.cutoffRank[Category.OBC],
-      'SC Cutoff': c.cutoffRank[Category.SC],
-      'ST Cutoff': c.cutoffRank[Category.ST],
-      'EWS Cutoff': c.cutoffRank[Category.EWS],
+      'General Cutoff': c.cutoffRank?.[Category.GENERAL] || 'N/A',
+      'OBC Cutoff': c.cutoffRank?.[Category.OBC] || 'N/A',
+      'SC Cutoff': c.cutoffRank?.[Category.SC] || 'N/A',
+      'ST Cutoff': c.cutoffRank?.[Category.ST] || 'N/A',
+      'EWS Cutoff': c.cutoffRank?.[Category.EWS] || 'N/A',
       'Tuition Fee': c.fees?.tuition || 0,
       'Hostel Fee': c.fees?.hostel || 0,
       'Official Link': c.link
     }));
-    exportToExcel(exportData, `PredictedColleges_${formData.rank}`);
+
+    if (exportData.length === 0) {
+      alert("No data available to download.");
+      return;
+    }
+
+    exportToExcel(exportData, `Colleges_List_${new Date().toLocaleDateString()}`);
   };
 
   return (
@@ -485,8 +562,14 @@ export default function Predictor() {
                       <Award className="h-8 w-8 text-blue-600" />
                     </div>
                     <div className="flex-1 pr-12">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
                         <h3 className="text-xl font-black text-slate-900 leading-tight">{college.name}</h3>
+                        {college.choiceCode && (
+                          <div className="flex items-center space-x-1 bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-200">
+                            <Zap className="h-3 w-3" />
+                            <span>Choice Code: {college.choiceCode}</span>
+                          </div>
+                        )}
                         {college.nirfRanking && (
                           <span className="inline-flex items-center bg-orange-50 text-orange-600 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border border-orange-100">
                             NIRF #{college.nirfRanking}
@@ -494,8 +577,8 @@ export default function Predictor() {
                         )}
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-slate-500 font-medium flex items-center">
-                          <MapPin className="h-3.5 w-3.5 mr-1 text-slate-400" />
+                        <p className="text-sm text-slate-700 font-bold flex items-center">
+                          <MapPin className="h-4 w-4 mr-1 text-blue-600" />
                           {college.city}, {college.state}
                         </p>
                         {college.description && (
@@ -669,20 +752,153 @@ export default function Predictor() {
               </div>
               <h3 className="text-2xl font-black text-slate-900 mb-4">No matching colleges found</h3>
               <p className="text-slate-500 max-w-sm mx-auto mb-10 text-lg leading-relaxed">
-                We couldn't find any institutions matching your criteria ({formData.examType}, {formData.category}, rank {formData.rank}). Try broadening your search or checking for data updates.
+                We couldn't find any institutions matching your criteria ({formData.examType}, {formData.category}, rank {formData.rank}). Try broadening your search or check out all available institutions.
               </p>
-              <button 
-                onClick={() => {
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black hover:bg-blue-700 transition shadow-xl shadow-blue-100 uppercase tracking-widest text-xs"
-              >
-                Modify Search Criteria
-              </button>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button 
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black hover:bg-blue-700 transition shadow-xl shadow-blue-100 uppercase tracking-widest text-xs min-w-[200px]"
+                >
+                  Modify Search
+                </button>
+                <button 
+                  onClick={async () => {
+                    setLoading(true);
+                    try {
+                      const response = await fetch('/api/colleges');
+                      const all = await response.json();
+                      setResults(all);
+                      setFilterType('All');
+                      setFilterQuota('All');
+                    } catch (err) {
+                      console.error(err);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="bg-white text-slate-700 border border-slate-200 px-8 py-4 rounded-2xl font-black hover:bg-slate-50 transition shadow-sm uppercase tracking-widest text-xs min-w-[200px]"
+                >
+                  View All Institutions
+                </button>
+              </div>
             </div>
           )}
         </motion.div>
       )}
+
+      {/* Admin Action Button */}
+      <div className="mt-12 flex justify-center">
+        <button 
+          onClick={() => setShowAdminModal(true)}
+          className="text-slate-400 hover:text-slate-600 font-bold text-xs uppercase tracking-widest border-b border-slate-200 pb-1 flex items-center gap-2"
+        >
+          <Filter className="h-3 w-3" />
+          <span>Admin: Manage Database</span>
+        </button>
+      </div>
+
+      {/* Admin Modal */}
+      <AnimatePresence>
+        {showAdminModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowAdminModal(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-8 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-black text-slate-900">Add New College</h2>
+                <button onClick={() => setShowAdminModal(false)} className="p-2 hover:bg-slate-100 rounded-full">
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAdminSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Unique ID (e.g., aiims-delhi)</label>
+                    <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={adminFormData.id} onChange={e => setAdminFormData({...adminFormData, id: e.target.value})} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">College Name</label>
+                    <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={adminFormData.name} onChange={e => setAdminFormData({...adminFormData, name: e.target.value})} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                   <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">City</label>
+                    <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={adminFormData.city} onChange={e => setAdminFormData({...adminFormData, city: e.target.value})} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Exam Type</label>
+                    <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.examType} onChange={e => setAdminFormData({...adminFormData, examType: e.target.value as ExamType})}>
+                      {exams.map(e => <option key={e} value={e}>{e}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Quota</label>
+                    <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.quota} onChange={e => setAdminFormData({...adminFormData, quota: e.target.value as QuotaType})}>
+                      {quotas.map(q => <option key={q} value={q}>{q}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-2xl space-y-3">
+                   <p className="text-[10px] font-black uppercase text-slate-500 mb-2">Cutoff Ranks / Percentiles</p>
+                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                     {categories.map(cat => (
+                       <div key={cat} className="space-y-1">
+                         <label className="text-[9px] font-bold text-slate-400">{cat}</label>
+                         <input 
+                           type="number" 
+                           step="any"
+                           className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs" 
+                           value={adminFormData.cutoffRank[cat]} 
+                           onChange={e => setAdminFormData({
+                             ...adminFormData, 
+                             cutoffRank: { ...adminFormData.cutoffRank, [cat]: parseFloat(e.target.value) }
+                           })} 
+                         />
+                       </div>
+                     ))}
+                   </div>
+                </div>
+
+                <div className="flex gap-4">
+                   <div className="flex-1 space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">Tuition Fee</label>
+                      <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.fees.tuition} onChange={e => setAdminFormData({...adminFormData, fees: {...adminFormData.fees, tuition: parseInt(e.target.value)}})} />
+                   </div>
+                   <div className="flex-1 space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">Hostel Fee</label>
+                      <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.fees.hostel} onChange={e => setAdminFormData({...adminFormData, fees: {...adminFormData.fees, hostel: parseInt(e.target.value)}})} />
+                   </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400">Website Link</label>
+                  <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.link} onChange={e => setAdminFormData({...adminFormData, link: e.target.value})} />
+                </div>
+
+                <button type="submit" className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition">
+                  Save to Database
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Compare Bar */}
       <AnimatePresence>

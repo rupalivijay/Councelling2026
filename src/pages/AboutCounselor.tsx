@@ -28,12 +28,13 @@ export default function AboutCounselor() {
                 <div className="relative">
                   <div className="absolute -inset-4 bg-orange-100 rounded-[2.5rem] -rotate-3" />
                   <img
-                    src="/counselor_portrait.png"
+                    src="/input_file_0.png"
                     alt="Mr. Vijay Bhosale"
-                    className="relative z-10 w-48 h-64 object-cover rounded-[2rem] shadow-xl border-4 border-white"
+                    className="relative z-10 w-56 h-72 object-cover rounded-[2.5rem] shadow-2xl border-4 border-white"
                     onError={(e) => {
-                      e.currentTarget.src = "https://placehold.co/400x600/f97316/ffffff?text=Counselor+Vijay";
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&h=600&auto=format&fit=crop";
                     }}
+                    referrerPolicy="no-referrer"
                   />
                 </div>
               </div>

@@ -44,6 +44,7 @@ export interface College {
   cutoffRank: {
     [key in Category]: number;
   };
+  choiceCode?: string;
   link: string;
   type: "Medical" | "Engineering";
   quota: QuotaType;

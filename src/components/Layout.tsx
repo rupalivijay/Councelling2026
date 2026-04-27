@@ -2,7 +2,7 @@ import React from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { Outlet } from 'react-router-dom';
-import { auth, db } from '../lib/firebase';
+import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { MessageCircle, X, Sparkles, User } from 'lucide-react';
@@ -20,8 +20,12 @@ export default function Layout() {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
-        const counselorDoc = await getDoc(doc(db, 'counselors', u.uid));
-        setIsCounselor(counselorDoc.exists());
+        try {
+          const counselorDoc = await getDoc(doc(db, 'counselors', u.uid));
+          setIsCounselor(counselorDoc.exists());
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, `counselors/${u.uid}`);
+        }
       } else {
         setIsCounselor(false);
       }

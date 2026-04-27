@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { GraduationCap, FileText, Building2, Calendar, Menu, X, LogIn, LogOut, User, Settings, ShieldCheck, UserCheck, Library, Video } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { auth, db } from '../lib/firebase';
+import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -30,7 +30,7 @@ export default function Navbar() {
           const counselorDoc = await getDoc(doc(db, 'counselors', u.uid));
           setIsCounselor(counselorDoc.exists());
         } catch (error) {
-          console.error("Error checking counselor status:", error);
+          handleFirestoreError(error, OperationType.GET, `counselors/${u.uid}`);
         }
       } else {
         setIsCounselor(false);
