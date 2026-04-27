@@ -1,0 +1,9 @@
+{
+  "name": "Laxmi Educational",
+  "description": "Expert AI-powered counseling for NEET, JEE & CET admissions.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": []
+}

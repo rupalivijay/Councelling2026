@@ -1,0 +1,122 @@
+{
+  "entities": {
+    "user": {
+      "title": "User Profile",
+      "description": "Student profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "counselor"] },
+        "category": { "type": "string", "enum": ["General", "OBC", "SC", "ST", "EWS"] },
+        "domicile": { "type": "string" },
+        "savedColleges": { "type": "array" },
+        "notificationSettings": { "type": "object" }
+      },
+      "required": ["uid", "email"]
+    },
+    "document": {
+      "title": "Document",
+      "description": "Student uploaded documents",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Uploaded", "Verified", "Needs Attention"] },
+        "url": { "type": "string" },
+        "feedback": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "status"]
+    },
+    "message": {
+      "title": "Message",
+      "description": "Chat message between student and counselor",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "role": { "type": "string", "enum": ["student", "counselor"] }
+      },
+      "required": ["text", "senderId", "timestamp"]
+    },
+    "notification": {
+      "title": "Notification",
+      "description": "Real-time alerts for students",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["warning", "info", "success"] }
+      },
+      "required": ["title", "message", "timestamp"]
+    },
+    "appointment": {
+      "title": "Counseling Appointment",
+      "description": "1-on-1 session with a counselor",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "counselorId": { "type": "string" },
+        "subject": { "type": "string" },
+        "platform": { "type": "string", "enum": ["Google Meet", "WhatsApp", "Phone"] },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "scheduled", "completed", "cancelled"] },
+        "meetingLink": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "date", "time", "status"]
+    },
+    "college": {
+      "title": "College Information",
+      "description": "Data about educational institutions for prediction",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "state": { "type": "string" },
+        "city": { "type": "string" },
+        "examType": { "type": "string", "enum": ["NEET", "JEE", "CET-PCM", "CET-PCB"] },
+        "type": { "type": "string", "enum": ["Medical", "Engineering"] },
+        "quota": { "type": "string", "enum": ["All India Quota", "State Quota"] },
+        "cutoffRank": { "type": "object" },
+        "link": { "type": "string" },
+        "fees": { "type": "object" },
+        "nirfRanking": { "type": "integer" },
+        "description": { "type": "string" },
+        "historicalTrends": { "type": "object" }
+      },
+      "required": ["name", "state", "city", "examType", "type", "quota", "cutoffRank"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "user",
+      "description": "Collection of user profiles"
+    },
+    "users/{userId}/documents/{docId}": {
+      "schema": "document",
+      "description": "Student documents"
+    },
+    "users/{userId}/messages/{msgId}": {
+      "schema": "message",
+      "description": "Real-time chat messages between student and counselor"
+    },
+    "notifications": {
+      "schema": "notification",
+      "description": "Global notifications for all users"
+    },
+    "users/{userId}/appointments/{appointmentId}": {
+      "schema": "appointment",
+      "description": "Individual counseling appointments"
+    },
+    "colleges/{collegeId}": {
+      "schema": "college",
+      "description": "Master database of colleges and cutoffs"
+    }
+  }
+}
