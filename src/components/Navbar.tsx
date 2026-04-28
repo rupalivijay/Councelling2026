@@ -46,10 +46,20 @@ export default function Navbar() {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error("Login failed:", error);
-      // Fallback for iframe restrictions if popup is blocked
-      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
-        alert("Sign-in popup was blocked or closed. Please try again or check your browser settings.");
+      
+      let message = "Login failed. Please check your internet connection.";
+      
+      if (error.code === 'auth/popup-blocked') {
+        message = "Sign-in popup was blocked by your browser. Please allow popups for this site or open the app in a new tab.";
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        message = "Sign-in popup was closed before completion. Please try again.";
+      } else if (error.code === 'auth/unauthorized-domain') {
+        message = `This domain is not authorized for login. If you are running locally, ensure 'localhost' is added to Authorized Domains in your Firebase Console. Current domain: ${window.location.hostname}`;
+      } else if (error.code === 'auth/operation-not-allowed') {
+        message = "Google Sign-In is not enabled for this project. Please enable it in the Firebase Console.";
       }
+
+      alert(message);
     } finally {
       setIsLoggingIn(false);
     }
