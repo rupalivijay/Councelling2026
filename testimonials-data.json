@@ -1,0 +1,29 @@
+[
+  {
+    "id": "t1",
+    "studentName": "Rahul Sharma",
+    "college": "IIT Bombay",
+    "year": "2024",
+    "content": "The predictor was incredibly accurate! It helped me set realistic targets and focus my preparation on the right colleges.",
+    "avatarUrl": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200&h=200&auto=format&fit=crop",
+    "rank": "AIR 156"
+  },
+  {
+    "id": "t2",
+    "studentName": "Ananya Kulkarni",
+    "college": "BJ Medical College, Pune",
+    "year": "2023",
+    "content": "Professional counseling made all the difference in my admission journey. Highly recommend the personalized guidance sessions.",
+    "avatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&h=200&auto=format&fit=crop",
+    "rank": "NEET 642"
+  },
+  {
+    "id": "t3",
+    "studentName": "Siddharth Verma",
+    "college": "COEP Pune",
+    "year": "2024",
+    "content": "I was confused between multiple state colleges. The choice filling support helped me secure my 1st preference easily.",
+    "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&h=200&auto=format&fit=crop",
+    "rank": "MHT-CET 99.8"
+  }
+]

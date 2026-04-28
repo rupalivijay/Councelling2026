@@ -1,8 +1,18 @@
 import { motion } from 'motion/react';
-import { ArrowRight, Sparkles, ShieldCheck, Zap, Video } from 'lucide-react';
+import { ArrowRight, Sparkles, ShieldCheck, Zap, Video, Star, Quote } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import React from 'react';
 
 export default function Home() {
+  const [testimonials, setTestimonials] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    fetch('/api/testimonials')
+      .then(res => res.json())
+      .then(data => setTestimonials(data))
+      .catch(err => console.error(err));
+  }, []);
+
   return (
     <div className="relative overflow-hidden">
       {/* Background blobs */}
@@ -83,6 +93,49 @@ export default function Home() {
             title="Strategic Choice filling" 
             description="Expert strategies to maximize your chances of getting your dream institution."
           />
+        </div>
+      </section>
+
+      <section className="py-24 bg-slate-50 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl lg:text-6xl font-black text-slate-900 mb-4 tracking-tight">Student Success Stories</h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">Hear from students who successfully secured admissions in top institutions with our guidance.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((t, i) => (
+              <motion.div
+                key={t.id || i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-100 border border-slate-100 flex flex-col"
+              >
+                <div className="flex items-center space-x-1 text-orange-400 mb-6">
+                  {[...Array(5)].map((_, j) => <Star key={j} className="h-4 w-4 fill-current" />)}
+                </div>
+                
+                <Quote className="h-10 w-10 text-blue-100 mb-4" />
+                
+                <p className="text-slate-700 text-lg leading-relaxed mb-8 italic">
+                  "{t.content}"
+                </p>
+
+                <div className="mt-auto pt-8 border-t border-slate-50 flex items-center space-x-4">
+                  <img 
+                    src={t.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&h=100&auto=format&fit=crop"} 
+                    alt={t.studentName} 
+                    className="w-12 h-12 rounded-full object-cover border-2 border-blue-100" 
+                  />
+                  <div>
+                    <h4 className="font-black text-slate-900">{t.studentName}</h4>
+                    <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">{t.college} • {t.rank}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 

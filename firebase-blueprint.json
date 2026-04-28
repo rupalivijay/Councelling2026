@@ -83,6 +83,7 @@
         "examType": { "type": "string", "enum": ["NEET", "JEE", "CET-PCM", "CET-PCB"] },
         "type": { "type": "string", "enum": ["Medical", "Engineering"] },
         "quota": { "type": "string", "enum": ["All India Quota", "State Quota"] },
+        "ownership": { "type": "string", "enum": ["Government", "Private", "Aided", "Deemed"] },
         "cutoffRank": { "type": "object" },
         "link": { "type": "string" },
         "fees": { "type": "object" },
@@ -91,6 +92,20 @@
         "historicalTrends": { "type": "object" }
       },
       "required": ["name", "state", "city", "examType", "type", "quota", "cutoffRank"]
+    },
+    "testimonial": {
+      "title": "Student Testimonial",
+      "description": "Success stories and feedback from successfully placed students",
+      "type": "object",
+      "properties": {
+        "studentName": { "type": "string" },
+        "college": { "type": "string" },
+        "year": { "type": "string" },
+        "content": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "rank": { "type": "string" }
+      },
+      "required": ["studentName", "content", "college"]
     }
   },
   "firestore": {
@@ -117,6 +132,10 @@
     "colleges/{collegeId}": {
       "schema": "college",
       "description": "Master database of colleges and cutoffs"
+    },
+    "testimonials/{testimonialId}": {
+      "schema": "testimonial",
+      "description": "Student success stories and platform feedback"
     }
   }
 }

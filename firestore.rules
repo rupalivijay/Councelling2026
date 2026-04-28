@@ -116,6 +116,11 @@ service cloud.firestore {
       allow write: if isValidId(collegeId) && isAdmin();
     }
 
+    match /testimonials/{testimonialId} {
+      allow list, get: if isValidId(testimonialId);
+      allow write: if isValidId(testimonialId) && isAdmin();
+    }
+
     match /notifications/{notifId} {
       allow list, get: if isValidId(notifId);
       allow write: if isValidId(notifId) && isAdmin();

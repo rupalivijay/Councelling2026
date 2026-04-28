@@ -19,6 +19,7 @@ export default function Predictor() {
   const [hasSearched, setHasSearched] = React.useState(false);
   const [filterType, setFilterType] = React.useState<'All' | 'Medical' | 'Engineering'>('All');
   const [filterQuota, setFilterQuota] = React.useState<'All' | QuotaType>('All');
+  const [filterOwnership, setFilterOwnership] = React.useState<'All' | 'Government' | 'Private' | 'Aided' | 'Deemed'>('All');
   const [selectedForCompare, setSelectedForCompare] = React.useState<College[]>([]);
   const [showComparison, setShowComparison] = React.useState(false);
   const [expandedTrends, setExpandedTrends] = React.useState<string | null>(null);
@@ -31,7 +32,9 @@ export default function Predictor() {
   const [rankError, setRankError] = React.useState<string | null>(null);
   const [quickMatchError, setQuickMatchError] = React.useState<string | null>(null);
   const [showAdminModal, setShowAdminModal] = React.useState(false);
+  const [adminTab, setAdminTab] = React.useState<'colleges' | 'testimonials'>('colleges');
   const [adminFormData, setAdminFormData] = React.useState({
+// ... (college state)
     id: '',
     name: '',
     state: 'Maharashtra',
@@ -39,6 +42,7 @@ export default function Predictor() {
     examType: ExamType.NEET,
     type: 'Medical' as 'Medical' | 'Engineering',
     quota: QuotaType.AIQ,
+    ownership: 'Government' as 'Government' | 'Private' | 'Aided' | 'Deemed',
     cutoffRank: {
       [Category.GENERAL]: 0,
       [Category.OBC]: 0,
@@ -51,6 +55,33 @@ export default function Predictor() {
     fees: { tuition: 0, hostel: 0 },
     description: ''
   });
+
+  const [testimonialFormData, setTestimonialFormData] = React.useState({
+    studentName: '',
+    college: '',
+    year: '2024',
+    content: '',
+    avatarUrl: '',
+    rank: ''
+  });
+
+  const handleTestimonialSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('/api/testimonials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...testimonialFormData, id: Date.now().toString() })
+      });
+      if (response.ok) {
+        alert("Testimonial added successfully!");
+        setTestimonialFormData({ studentName: '', college: '', year: '2024', content: '', avatarUrl: '', rank: '' });
+        setShowAdminModal(false);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +102,7 @@ export default function Predictor() {
         // Reset form
         setAdminFormData({
            id: '', name: '', state: 'Maharashtra', city: '', examType: ExamType.NEET, type: 'Medical', quota: QuotaType.AIQ,
+           ownership: 'Government',
            cutoffRank: { [Category.GENERAL]: 0, [Category.OBC]: 0, [Category.SC]: 0, [Category.ST]: 0, [Category.EWS]: 0 },
            choiceCode: '', link: '', fees: { tuition: 0, hostel: 0 }, description: ''
         });
@@ -179,9 +211,10 @@ export default function Predictor() {
     return results.filter(c => {
       const typeMatch = filterType === 'All' || c.type === filterType;
       const quotaMatch = filterQuota === 'All' || c.quota === filterQuota;
-      return typeMatch && quotaMatch;
+      const ownershipMatch = filterOwnership === 'All' || c.ownership === filterOwnership;
+      return typeMatch && quotaMatch && ownershipMatch;
     });
-  }, [results, filterType, filterQuota]);
+  }, [results, filterType, filterQuota, filterOwnership]);
 
   const handleShare = (college: College) => {
     const text = `Check out ${college.name} in ${college.city}, ${college.state}. Predicted for my rank by Laxmi Educational Predictor!`;
@@ -225,6 +258,7 @@ export default function Predictor() {
       'Type': c.type,
       'Exam': c.examType,
       'Quota': c.quota,
+      'Ownership': c.ownership || 'N/A',
       'General Cutoff': c.cutoffRank?.[Category.GENERAL] || 'N/A',
       'OBC Cutoff': c.cutoffRank?.[Category.OBC] || 'N/A',
       'SC Cutoff': c.cutoffRank?.[Category.SC] || 'N/A',
@@ -232,7 +266,7 @@ export default function Predictor() {
       'EWS Cutoff': c.cutoffRank?.[Category.EWS] || 'N/A',
       'Tuition Fee': c.fees?.tuition || 0,
       'Hostel Fee': c.fees?.hostel || 0,
-      'Official Link': c.link
+      'Website Link': c.link
     }));
 
     if (exportData.length === 0) {
@@ -506,6 +540,21 @@ export default function Predictor() {
                     </button>
                   ))}
                 </div>
+
+                <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-xl w-fit">
+                  {(['All', 'Government', 'Private', 'Aided', 'Deemed'] as const).map((o) => (
+                    <button
+                      key={o}
+                      onClick={() => setFilterOwnership(o)}
+                      className={cn(
+                        "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition",
+                        filterOwnership === o ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      {o}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             
@@ -534,6 +583,11 @@ export default function Predictor() {
                     )}>
                       {college.type}
                     </span>
+                    {college.ownership && (
+                      <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+                        {college.ownership}
+                      </span>
+                    )}
                     <button
                       onClick={() => handleShare(college)}
                       className="flex items-center space-x-1 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition"
@@ -817,84 +871,152 @@ export default function Predictor() {
               className="relative bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-8 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-black text-slate-900">Add New College</h2>
+                <h2 className="text-2xl font-black text-slate-900">Admin Console</h2>
                 <button onClick={() => setShowAdminModal(false)} className="p-2 hover:bg-slate-100 rounded-full">
                   <X className="h-6 w-6" />
                 </button>
               </div>
 
-              <form onSubmit={handleAdminSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Unique ID (e.g., aiims-delhi)</label>
-                    <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={adminFormData.id} onChange={e => setAdminFormData({...adminFormData, id: e.target.value})} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400">College Name</label>
-                    <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={adminFormData.name} onChange={e => setAdminFormData({...adminFormData, name: e.target.value})} />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400">City</label>
-                    <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={adminFormData.city} onChange={e => setAdminFormData({...adminFormData, city: e.target.value})} />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Exam Type</label>
-                    <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.examType} onChange={e => setAdminFormData({...adminFormData, examType: e.target.value as ExamType})}>
-                      {exams.map(e => <option key={e} value={e}>{e}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase text-slate-400">Quota</label>
-                    <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.quota} onChange={e => setAdminFormData({...adminFormData, quota: e.target.value as QuotaType})}>
-                      {quotas.map(q => <option key={q} value={q}>{q}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-slate-50 rounded-2xl space-y-3">
-                   <p className="text-[10px] font-black uppercase text-slate-500 mb-2">Cutoff Ranks / Percentiles</p>
-                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                     {categories.map(cat => (
-                       <div key={cat} className="space-y-1">
-                         <label className="text-[9px] font-bold text-slate-400">{cat}</label>
-                         <input 
-                           type="number" 
-                           step="any"
-                           className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs" 
-                           value={adminFormData.cutoffRank[cat]} 
-                           onChange={e => setAdminFormData({
-                             ...adminFormData, 
-                             cutoffRank: { ...adminFormData.cutoffRank, [cat]: parseFloat(e.target.value) }
-                           })} 
-                         />
-                       </div>
-                     ))}
-                   </div>
-                </div>
-
-                <div className="flex gap-4">
-                   <div className="flex-1 space-y-1">
-                      <label className="text-[10px] font-black uppercase text-slate-400">Tuition Fee</label>
-                      <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.fees.tuition} onChange={e => setAdminFormData({...adminFormData, fees: {...adminFormData.fees, tuition: parseInt(e.target.value)}})} />
-                   </div>
-                   <div className="flex-1 space-y-1">
-                      <label className="text-[10px] font-black uppercase text-slate-400">Hostel Fee</label>
-                      <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.fees.hostel} onChange={e => setAdminFormData({...adminFormData, fees: {...adminFormData.fees, hostel: parseInt(e.target.value)}})} />
-                   </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-slate-400">Website Link</label>
-                  <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.link} onChange={e => setAdminFormData({...adminFormData, link: e.target.value})} />
-                </div>
-
-                <button type="submit" className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition">
-                  Save to Database
+              {/* Tabs */}
+              <div className="flex bg-slate-100 p-1 rounded-2xl mb-8">
+                <button 
+                  onClick={() => setAdminTab('colleges')}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition",
+                    adminTab === 'colleges' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  )}
+                >
+                  Colleges
                 </button>
-              </form>
+                <button 
+                  onClick={() => setAdminTab('testimonials')}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition",
+                    adminTab === 'testimonials' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  )}
+                >
+                  Testimonials
+                </button>
+              </div>
+
+              {adminTab === 'colleges' ? (
+                <form onSubmit={handleAdminSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">Unique ID (e.g., aiims-delhi)</label>
+                      <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={adminFormData.id} onChange={e => setAdminFormData({...adminFormData, id: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">College Name</label>
+                      <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={adminFormData.name} onChange={e => setAdminFormData({...adminFormData, name: e.target.value})} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                     <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">City</label>
+                      <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={adminFormData.city} onChange={e => setAdminFormData({...adminFormData, city: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">Exam Type</label>
+                      <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.examType} onChange={e => setAdminFormData({...adminFormData, examType: e.target.value as ExamType})}>
+                        {exams.map(e => <option key={e} value={e}>{e}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">Quota</label>
+                      <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.quota} onChange={e => setAdminFormData({...adminFormData, quota: e.target.value as QuotaType})}>
+                        {quotas.map(q => <option key={q} value={q}>{q}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">Ownership</label>
+                      <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.ownership} onChange={e => setAdminFormData({...adminFormData, ownership: e.target.value as any})}>
+                        {['Government', 'Private', 'Aided', 'Deemed'].map(o => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 rounded-2xl space-y-3">
+                     <p className="text-[10px] font-black uppercase text-slate-500 mb-2">Cutoff Ranks / Percentiles</p>
+                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                       {categories.map(cat => (
+                         <div key={cat} className="space-y-1">
+                           <label className="text-[9px] font-bold text-slate-400">{cat}</label>
+                           <input 
+                             type="number" 
+                             step="any"
+                             className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs" 
+                             value={adminFormData.cutoffRank[cat]} 
+                             onChange={e => setAdminFormData({
+                               ...adminFormData, 
+                               cutoffRank: { ...adminFormData.cutoffRank, [cat]: parseFloat(e.target.value) }
+                             })} 
+                           />
+                         </div>
+                       ))}
+                     </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                     <div className="flex-1 space-y-1">
+                        <label className="text-[10px] font-black uppercase text-slate-400">Tuition Fee</label>
+                        <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.fees.tuition} onChange={e => setAdminFormData({...adminFormData, fees: {...adminFormData.fees, tuition: parseInt(e.target.value)}})} />
+                     </div>
+                     <div className="flex-1 space-y-1">
+                        <label className="text-[10px] font-black uppercase text-slate-400">Hostel Fee</label>
+                        <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.fees.hostel} onChange={e => setAdminFormData({...adminFormData, fees: {...adminFormData.fees, hostel: parseInt(e.target.value)}})} />
+                     </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Website Link</label>
+                    <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.link} onChange={e => setAdminFormData({...adminFormData, link: e.target.value})} />
+                  </div>
+
+                  <button type="submit" className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition">
+                    Save College
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleTestimonialSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">Student Name</label>
+                      <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={testimonialFormData.studentName} onChange={e => setTestimonialFormData({...testimonialFormData, studentName: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">College Name</label>
+                      <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={testimonialFormData.college} onChange={e => setTestimonialFormData({...testimonialFormData, college: e.target.value})} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">Score / Rank</label>
+                      <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" placeholder="e.g. AIR 45" value={testimonialFormData.rank} onChange={e => setTestimonialFormData({...testimonialFormData, rank: e.target.value})} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">Year</label>
+                      <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={testimonialFormData.year} onChange={e => setTestimonialFormData({...testimonialFormData, year: e.target.value})} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Student Photo URL</label>
+                    <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" placeholder="https://..." value={testimonialFormData.avatarUrl} onChange={e => setTestimonialFormData({...testimonialFormData, avatarUrl: e.target.value})} />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Testimonial Content</label>
+                    <textarea rows={4} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" required value={testimonialFormData.content} onChange={e => setTestimonialFormData({...testimonialFormData, content: e.target.value})} />
+                  </div>
+
+                  <button type="submit" className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition">
+                    Save Testimonial
+                  </button>
+                </form>
+              )}
             </motion.div>
           </div>
         )}
@@ -1012,6 +1134,16 @@ export default function Predictor() {
                                                 college.quota === QuotaType.AIQ ? "bg-orange-100 text-orange-600" : "bg-purple-100 text-purple-600"
                                             )}>
                                                 {college.quota}
+                                            </span>
+                                        </td>
+                                    ))}
+                                </tr>
+                                <tr>
+                                    <td className="p-6 font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50">Ownership</td>
+                                    {selectedForCompare.map(college => (
+                                        <td key={college.id} className="p-6 border-b border-slate-50">
+                                            <span className="px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest bg-emerald-100 text-emerald-600">
+                                                {college.ownership || 'N/A'}
                                             </span>
                                         </td>
                                     ))}

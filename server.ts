@@ -24,30 +24,50 @@ async function startServer() {
   app.use(express.json());
 
   // Local/Fallback College Data
-let colleges: any[] = [];
-try {
-  const localDataPath = path.join(process.cwd(), "colleges-data.json");
-  if (fs.existsSync(localDataPath)) {
-    colleges = JSON.parse(fs.readFileSync(localDataPath, "utf8"));
-    console.log(`Loaded ${colleges.length} colleges from local JSON file`);
-  }
-} catch (error) {
-  console.error("Error loading local colleges-data.json:", error);
-}
+  let colleges: any[] = [];
+  let testimonials: any[] = [];
 
-// Default fallback if JSON is missing or empty
-if (colleges.length === 0) {
-  colleges = [
-    { 
-      id: "1", name: "AIIMS Delhi", state: "Delhi", city: "New Delhi", examType: "NEET", type: "Medical", quota: "All India Quota", 
-      choiceCode: "AIIMS01",
-      cutoffRank: { General: 50, OBC: 200, SC: 500, ST: 1000, EWS: 150 }, 
-      link: "https://www.aiims.edu/", fees: { tuition: 1628, hostel: 4226 },
-      nirfRanking: 1,
-      description: "India's premier medical research university and hospital, consistently ranked #1 since NIRF's inception."
+  try {
+    const localDataPath = path.join(process.cwd(), "colleges-data.json");
+    if (fs.existsSync(localDataPath)) {
+      colleges = JSON.parse(fs.readFileSync(localDataPath, "utf8"));
+      console.log(`Loaded ${colleges.length} colleges from local JSON file`);
     }
-  ];
-}
+
+    const testimonialsPath = path.join(process.cwd(), "testimonials-data.json");
+    if (fs.existsSync(testimonialsPath)) {
+      testimonials = JSON.parse(fs.readFileSync(testimonialsPath, "utf8"));
+      console.log(`Loaded ${testimonials.length} testimonials from local JSON file`);
+    }
+  } catch (error) {
+    console.error("Error loading local data files:", error);
+  }
+
+  // Default fallback if JSON is missing or empty
+  if (colleges.length === 0) {
+    colleges = [
+      { 
+        id: "1", name: "AIIMS Delhi", state: "Delhi", city: "New Delhi", examType: "NEET", type: "Medical", quota: "All India Quota", 
+        choiceCode: "AIIMS01",
+        cutoffRank: { General: 50, OBC: 200, SC: 500, ST: 1000, EWS: 150 }, 
+        link: "https://www.aiims.edu/", fees: { tuition: 1628, hostel: 4226 },
+        nirfRanking: 1,
+        description: "India's premier medical research university and hospital, consistently ranked #1 since NIRF's inception."
+      }
+    ];
+  }
+
+  if (testimonials.length === 0) {
+    testimonials = [
+      {
+        id: "default-1",
+        studentName: "Success Student",
+        college: "Top Institute",
+        content: "Highly recommend this platform for career guidance!",
+        year: "2024"
+      }
+    ];
+  }
 
 // Function to refresh colleges from Firestore
   const fetchColleges = async () => {
@@ -109,6 +129,26 @@ if (colleges.length === 0) {
     }
     
     res.status(201).json(newCollege);
+  });
+
+  app.get("/api/testimonials", (req, res) => {
+    res.json(testimonials);
+  });
+
+  app.post("/api/testimonials", (req, res) => {
+    const newTestimonial = req.body;
+    testimonials.push(newTestimonial);
+    
+    // Persist to local JSON
+    try {
+      const testimonialsPath = path.join(process.cwd(), "testimonials-data.json");
+      fs.writeFileSync(testimonialsPath, JSON.stringify(testimonials, null, 2));
+      console.log(`Added new testimonial and saved to disk`);
+    } catch (error) {
+      console.error("Error saving to testimonials-data.json:", error);
+    }
+    
+    res.status(201).json(newTestimonial);
   });
 
   // Vite middleware

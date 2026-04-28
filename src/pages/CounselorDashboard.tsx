@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Users, FileCheck, AlertCircle, CheckCircle, ExternalLink, ShieldAlert, X, Video, Calendar as CalendarIcon, Clock, Link as LinkIcon } from 'lucide-react';
-import { db, auth } from '../lib/firebase';
-import { collectionGroup, getDocs, doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { Users, FileCheck, AlertCircle, CheckCircle, ExternalLink, ShieldAlert, X, Video, Calendar as CalendarIcon, Clock, Link as LinkIcon, MessageCircle } from 'lucide-react';
+import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { collectionGroup, getDocs, doc, updateDoc, getDoc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { UserDocument, DocumentStatus } from '../types';
 import { cn } from '../lib/utils';
@@ -16,24 +16,59 @@ export default function CounselorDashboard() {
   const [feedback, setFeedback] = React.useState("");
   const [activeTab, setActiveTab] = React.useState<'docs' | 'chat' | 'appointments'>('docs');
   const [appointments, setAppointments] = React.useState<any[]>([]);
+  const [chatUsers, setChatUsers] = React.useState<any[]>([]);
 
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let unsubChats: (() => void) | null = null;
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const counselorDoc = await getDoc(doc(db, 'counselors', user.uid));
         if (counselorDoc.exists()) {
           setIsCounselor(true);
           fetchStudents();
           fetchAppointments();
+          
+          // Real-time chat users list
+          const q = query(collectionGroup(db, 'messages'), orderBy('timestamp', 'desc'));
+          unsubChats = onSnapshot(q, (snapshot) => {
+            const usersMap: Record<string, any> = {};
+            snapshot.forEach((doc) => {
+              const path = doc.ref.path.split('/');
+              const studentId = path[1];
+              const data = doc.data();
+              if (!usersMap[studentId]) {
+                usersMap[studentId] = {
+                  id: studentId,
+                  lastMessage: data.text,
+                  lastTimestamp: data.timestamp,
+                  studentName: data.senderId === studentId ? data.senderName : "Support Chat"
+                };
+              }
+            });
+            setChatUsers(Object.values(usersMap));
+          }, (err) => {
+            handleFirestoreError(err, OperationType.GET, 'collectionGroup:messages');
+          });
         } else {
             setLoading(false);
         }
       } else {
+        setIsCounselor(false);
         setLoading(false);
+        if (unsubChats) {
+          unsubChats();
+          unsubChats = null;
+        }
       }
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubChats) unsubChats();
+    };
   }, []);
+
+  // Removed fetchChatUsers as it's now handled by onSnapshot in useEffect
 
   const fetchAppointments = async () => {
     try {
@@ -127,13 +162,17 @@ export default function CounselorDashboard() {
            <Users className="h-4 w-4" />
            <span className="text-sm font-bold">{students.length} Students</span>
         </div>
+        <div className="flex items-center space-x-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full border border-emerald-100">
+           <MessageCircle className="h-4 w-4" />
+           <span className="text-sm font-bold">{chatUsers.length} Active Chats</span>
+        </div>
         <div className="flex items-center space-x-2 bg-orange-50 text-orange-700 px-4 py-2 rounded-full border border-orange-100">
            <Video className="h-4 w-4" />
            <span className="text-sm font-bold">{appointments.length} Meetings</span>
         </div>
       </div>
 
-      <div className="bg-white p-2 rounded-2xl border border-slate-200 mb-8 flex space-x-2 max-w-md">
+      <div className="bg-white p-2 rounded-2xl border border-slate-200 mb-8 flex space-x-2 max-w-lg">
         <button 
           onClick={() => setActiveTab('docs')}
           className={cn(
@@ -151,6 +190,15 @@ export default function CounselorDashboard() {
           )}
         >
           Manage Meetings
+        </button>
+        <button 
+          onClick={() => setActiveTab('chat')}
+          className={cn(
+            "flex-1 py-2 px-4 rounded-xl text-sm font-bold transition",
+            activeTab === 'chat' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
+          )}
+        >
+          Student Chats
         </button>
       </div>
 
@@ -286,6 +334,43 @@ export default function CounselorDashboard() {
               ))
             )}
           </div>
+        ) : activeTab === 'chat' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {chatUsers.length === 0 ? (
+                    <div className="col-span-full text-center py-20 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                        <MessageCircle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                        <p className="text-slate-500 font-bold">No active chats found.</p>
+                    </div>
+                ) : (
+                    chatUsers.map((user) => (
+                        <motion.div
+                            key={user.id}
+                            whileHover={{ y: -4 }}
+                            className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all cursor-pointer group"
+                            onClick={() => setSelectedStudent({ id: user.id, docs: [] })}
+                        >
+                            <div className="flex items-center space-x-4 mb-4">
+                                <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <MessageCircle className="h-6 w-6" />
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                    <h3 className="font-black text-slate-900 truncate">Student: {user.id.slice(-8)}</h3>
+                                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest truncate">{user.studentName}</p>
+                                </div>
+                            </div>
+                            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                <p className="text-xs text-slate-600 line-clamp-2 italic mb-2">"{user.lastMessage}"</p>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                                        {user.lastTimestamp?.toDate ? user.lastTimestamp.toDate().toLocaleString() : 'Recent'}
+                                    </span>
+                                    <span className="text-xs font-black text-blue-600 group-hover:underline">Open Chat →</span>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))
+                )}
+            </div>
         ) : null}
       </div>
 
