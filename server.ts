@@ -24,14 +24,15 @@ async function startServer() {
   app.use(express.json());
 
   // Local/Fallback College Data
-  let colleges: any[] = [];
+  let localColleges: any[] = [];
+  let dbColleges: any[] = [];
   let testimonials: any[] = [];
 
   try {
     const localDataPath = path.join(process.cwd(), "colleges-data.json");
     if (fs.existsSync(localDataPath)) {
-      colleges = JSON.parse(fs.readFileSync(localDataPath, "utf8"));
-      console.log(`Loaded ${colleges.length} colleges from local JSON file`);
+      localColleges = JSON.parse(fs.readFileSync(localDataPath, "utf8"));
+      console.log(`Loaded ${localColleges.length} colleges from local JSON file`);
     }
 
     const testimonialsPath = path.join(process.cwd(), "testimonials-data.json");
@@ -43,86 +44,98 @@ async function startServer() {
     console.error("Error loading local data files:", error);
   }
 
-  // Default fallback if JSON is missing or empty
-  if (colleges.length === 0) {
-    colleges = [
-      { 
-        id: "1", name: "AIIMS Delhi", state: "Delhi", city: "New Delhi", examType: "NEET", type: "Medical", quota: "All India Quota", 
-        choiceCode: "AIIMS01",
-        cutoffRank: { General: 50, OBC: 200, SC: 500, ST: 1000, EWS: 150 }, 
-        link: "https://www.aiims.edu/", fees: { tuition: 1628, hostel: 4226 },
-        nirfRanking: 1,
-        description: "India's premier medical research university and hospital, consistently ranked #1 since NIRF's inception."
-      }
-    ];
-  }
+  // Combined colleges
+  const getColleges = () => {
+    // If we have DB colleges, prioritize them but merge with unique local ones
+    if (dbColleges.length > 0) {
+      const dbIds = new Set(dbColleges.map(c => c.id));
+      const uniqueLocal = localColleges.filter(c => !dbIds.has(c.id));
+      return [...dbColleges, ...uniqueLocal];
+    }
+    return localColleges;
+  };
 
-  if (testimonials.length === 0) {
-    testimonials = [
-      {
-        id: "default-1",
-        studentName: "Success Student",
-        college: "Top Institute",
-        content: "Highly recommend this platform for career guidance!",
-        year: "2024"
-      }
-    ];
-  }
-
-// Function to refresh colleges from Firestore
+  // Function to refresh colleges from Firestore
   const fetchColleges = async () => {
     try {
       console.log(`Attempting to fetch colleges from DB: ${firebaseConfig.firestoreDatabaseId || '(default)'}`);
       const querySnapshot = await getDocs(collection(db, "colleges"));
       const freshColleges = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       if (freshColleges.length > 0) {
-        colleges = freshColleges;
-        console.log(`Successfully loaded ${colleges.length} colleges from Firestore`);
+        dbColleges = freshColleges;
+        console.log(`Successfully loaded ${dbColleges.length} colleges from Firestore`);
       } else {
         console.log("Firestore collection 'colleges' is empty.");
       }
     } catch (error: any) {
       console.error("Error fetching colleges from Firestore, using local fallback:");
       console.error("Error Code:", error?.code);
-      console.error("Error Message:", error?.message);
-      console.error("Full Error:", JSON.stringify(error));
     }
   };
 
   // API Endpoints
   app.post("/api/predict", async (req, res) => {
     const { rank, category, domicile, examType, quota } = req.body;
+    const currentColleges = getColleges();
     
-    const results = colleges.filter(college => {
+    console.log(`Prediction request: rank=${rank}, category=${category}, domicile=${domicile}, examType=${examType}, quota=${quota}`);
+    
+    const results = currentColleges.filter(college => {
+      // 1. Exam Type Match
       if (college.examType !== examType) return false;
-      if (quota === "State Quota" && college.quota === "State Quota" && college.state !== domicile) return false;
-      if (quota === "All India Quota" && college.quota !== "All India Quota") return false;
       
-      const cutoff = college.cutoffRank?.[category as keyof typeof college.cutoffRank];
-      if (cutoff === undefined) return false;
-      
-      if (examType === "CET-PCM" || examType === "CET-PCB") {
-        return rank >= cutoff;
+      // 2. Quota & State filtering logic
+      // Important: If searching for State Quota, we must honor eligibility
+      if (quota === "State Quota") {
+        // Students can apply for State Quota if:
+        // - They are local to that state
+        // - OR the college is All India Quota (which is open to all)
+        const isEligible = 
+          (college.quota === "State Quota" && college.state === domicile) ||
+          (college.quota === "All India Quota");
+        
+        if (!isEligible) return false;
+      } else if (quota === "All India Quota") {
+        // AIQ search only shows AIQ seats
+        if (college.quota !== "All India Quota") return false;
       }
       
-      return rank <= cutoff;
+      // 3. Category Cutoff Logic
+      const cutoffRankObj = college.cutoffRank || {};
+      const specificCutoff = cutoffRankObj[category];
+      const generalCutoff = cutoffRankObj["General"] || cutoffRankObj["GENERAL"];
+      
+      // Target rank for comparison
+      const targetRank = specificCutoff !== undefined ? specificCutoff : generalCutoff;
+      
+      if (targetRank === undefined) return false;
+
+      // 4. Score Comparison
+      // Percentile/Score: Higher is better (CET-PCM, CET-PCB usually provide percentiles)
+      if (examType === "CET-PCM" || examType === "CET_PCB" || examType === "CET-PCB") {
+        return rank >= targetRank;
+      }
+      
+      // rank (AIR): Lower is better (NEET/JEE ranks)
+      return rank <= targetRank;
     });
 
+    console.log(`Found ${results.length} results`);
     res.json(results);
   });
 
   app.get("/api/colleges", (req, res) => {
-    res.json(colleges);
+    res.json(getColleges());
   });
 
   app.post("/api/colleges", (req, res) => {
     const newCollege = req.body;
-    colleges.push(newCollege);
+    localColleges.push(newCollege);
     
     // Persist to local JSON
     try {
       const localDataPath = path.join(process.cwd(), "colleges-data.json");
-      fs.writeFileSync(localDataPath, JSON.stringify(colleges, null, 2));
+      fs.writeFileSync(localDataPath, JSON.stringify(localColleges, null, 2));
       console.log(`Added new college: ${newCollege.name} and saved to disk`);
     } catch (error) {
       console.error("Error saving to colleges-data.json:", error);

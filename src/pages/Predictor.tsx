@@ -357,6 +357,11 @@ export default function Predictor() {
                   required
                 />
               </div>
+              <p className="text-[10px] text-slate-400 ml-1 italic">
+                {(formData.examType === ExamType.CET_PCM || formData.examType === ExamType.CET_PCB) 
+                  ? "Note: For CET, enter your Percentile (e.g., 89.5). Higher is better." 
+                  : "Note: For NEET/JEE, enter your All India Rank (AIR). Lower is better."}
+              </p>
               {rankError && <p className="text-red-500 text-xs font-bold mt-1 ml-1">{rankError}</p>}
             </div>
 
@@ -804,18 +809,29 @@ export default function Predictor() {
               <div className="bg-white h-24 w-24 rounded-[2rem] shadow-sm flex items-center justify-center mx-auto mb-8 text-slate-300">
                 <Filter className="h-10 w-10" />
               </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-4">No matching colleges found</h3>
+              <h3 className="text-2xl font-black text-slate-900 mb-4">
+                {results.length > 0 ? "No colleges match your filter" : "No matching colleges found"}
+              </h3>
               <p className="text-slate-500 max-w-sm mx-auto mb-10 text-lg leading-relaxed">
-                We couldn't find any institutions matching your criteria ({formData.examType}, {formData.category}, rank {formData.rank}). Try broadening your search or check out all available institutions.
+                {results.length > 0 
+                  ? "We found eligible colleges for your rank, but they were filtered out by your current view settings (Type, Quota, or Ownership)."
+                  : `We couldn't find any institutions matching your core criteria (${formData.examType}, ${formData.category}, rank ${formData.rank}). Try broadening your search.`
+                }
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <button 
                   onClick={() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (results.length > 0) {
+                      setFilterType('All');
+                      setFilterQuota('All');
+                      setFilterOwnership('All');
+                    } else {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
                   }}
                   className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black hover:bg-blue-700 transition shadow-xl shadow-blue-100 uppercase tracking-widest text-xs min-w-[200px]"
                 >
-                  Modify Search
+                  {results.length > 0 ? "Clear Filters" : "Modify Search"}
                 </button>
                 <button 
                   onClick={async () => {
@@ -826,6 +842,7 @@ export default function Predictor() {
                       setResults(all);
                       setFilterType('All');
                       setFilterQuota('All');
+                      setFilterOwnership('All');
                     } catch (err) {
                       console.error(err);
                     } finally {
