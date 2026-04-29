@@ -15,7 +15,9 @@ export default function Predictor() {
     quota: QuotaType.AIQ
   });
   const [results, setResults] = React.useState<College[]>([]);
+  const [allColleges, setAllColleges] = React.useState<College[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [initialLoading, setInitialLoading] = React.useState(true);
   const [hasSearched, setHasSearched] = React.useState(false);
   const [filterType, setFilterType] = React.useState<'All' | 'Medical' | 'Engineering'>('All');
   const [filterQuota, setFilterQuota] = React.useState<'All' | QuotaType>('All');
@@ -172,6 +174,23 @@ export default function Predictor() {
 
   const resultsRef = React.useRef<HTMLDivElement>(null);
 
+  React.useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const response = await fetch('/api/colleges');
+        if (response.ok) {
+          const data = await response.json();
+          setAllColleges(data);
+        }
+      } catch (err) {
+        console.error("Error fetching initial college data:", err);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    fetchInitialData();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -238,13 +257,18 @@ export default function Predictor() {
     if (dataToExport.length === 0) {
       const confirmFull = window.confirm("No predicted colleges found for your rank. Would you like to download the full list of all available colleges instead?");
       if (confirmFull) {
-        try {
-          const response = await fetch('/api/colleges');
-          dataToExport = await response.json();
-        } catch (err) {
-          console.error("Failed to fetch all colleges:", err);
-          alert("Could not fetch college data.");
-          return;
+        if (allColleges.length > 0) {
+          dataToExport = allColleges;
+        } else {
+          try {
+            const response = await fetch('/api/colleges');
+            dataToExport = await response.json();
+            setAllColleges(dataToExport);
+          } catch (err) {
+            console.error("Failed to fetch all colleges:", err);
+            alert("Could not fetch college data.");
+            return;
+          }
         }
       } else {
         return;
@@ -284,6 +308,18 @@ export default function Predictor() {
         <p className="text-slate-600 max-w-2xl mx-auto">
           Get precise recommendations based on historical cutoff data for NEET, JEE, and CET. Our smart engine analyzes AIQ and State quota rankings.
         </p>
+        {!initialLoading && allColleges.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mt-4 inline-flex items-center space-x-2 bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100"
+          >
+            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">
+              Scanning {allColleges.length} Institutions
+            </span>
+          </motion.div>
+        )}
       </div>
 
       <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
