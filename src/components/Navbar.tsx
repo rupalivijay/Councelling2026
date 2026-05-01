@@ -4,7 +4,7 @@ import { GraduationCap, FileText, Building2, Calendar, Menu, X, LogIn, LogOut, U
 import { cn } from '../lib/utils';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const navItems = [
   { name: 'Predictor', path: '/predictor', icon: GraduationCap },
@@ -19,7 +19,6 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = React.useState(false);
   const [user, setUser] = React.useState<FirebaseUser | null>(null);
   const [isCounselor, setIsCounselor] = React.useState(false);
-  const [isLoggingIn, setIsLoggingIn] = React.useState(false);
   const location = useLocation();
 
   React.useEffect(() => {
@@ -38,32 +37,6 @@ export default function Navbar() {
     });
     return () => unsubscribe();
   }, []);
-
-  const handleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    setIsLoggingIn(true);
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      console.error("Login failed:", error);
-      
-      let message = "Login failed. Please check your internet connection.";
-      
-      if (error.code === 'auth/popup-blocked') {
-        message = "Sign-in popup was blocked by your browser. Please allow popups for this site or open the app in a new tab.";
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        message = "Sign-in popup was closed before completion. Please try again.";
-      } else if (error.code === 'auth/unauthorized-domain') {
-        message = `This domain is not authorized for login. If you are running locally, ensure 'localhost' is added to Authorized Domains in your Firebase Console. Current domain: ${window.location.hostname}`;
-      } else if (error.code === 'auth/operation-not-allowed') {
-        message = "Google Sign-In is not enabled for this project. Please enable it in the Firebase Console.";
-      }
-
-      alert(message);
-    } finally {
-      setIsLoggingIn(false);
-    }
-  };
 
   const handleLogout = () => signOut(auth);
 
@@ -115,13 +88,20 @@ export default function Navbar() {
                         <ShieldCheck className="h-5 w-5" />
                     </Link>
                 )}
+                {!isCounselor && (
+                  <Link to="/settings" className="p-2 text-slate-400 hover:text-blue-600 transition" title="Student Dashboard">
+                      <User className="h-5 w-5" />
+                  </Link>
+                )}
                 <div className="flex items-center space-x-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="" className="h-6 w-6 rounded-full" referrerPolicy="no-referrer" />
                   ) : (
-                    <User className="h-4 w-4 text-slate-400" />
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-blue-600" />
+                    </div>
                   )}
-                  <span className="text-sm font-semibold text-slate-700 max-w-[100px] truncate">{user.displayName}</span>
+                  <span className="text-sm font-semibold text-slate-700 max-w-[100px] truncate">{user.displayName || 'Student'}</span>
                 </div>
                 <button 
                   onClick={handleLogout}
@@ -132,14 +112,13 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <button 
-                onClick={handleLogin}
-                disabled={isLoggingIn}
-                className="flex items-center space-x-2 bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              <Link 
+                to="/auth"
+                className="flex items-center space-x-2 bg-blue-600 text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200"
               >
                 <LogIn className="h-4 w-4" />
-                <span>{isLoggingIn ? 'Signing in...' : 'Login'}</span>
-              </button>
+                <span>Get Started</span>
+              </Link>
             )}
           </div>
 
@@ -183,13 +162,14 @@ export default function Navbar() {
           ))}
           <div className="pt-4 space-y-2">
             {!user ? (
-               <button 
-                onClick={() => { handleLogin(); setIsOpen(false); }}
+               <Link 
+                to="/auth"
+                onClick={() => setIsOpen(false)}
                 className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white py-3 rounded-xl font-bold shadow-md"
                >
                  <LogIn className="h-5 w-5" />
-                 <span>Login with Google</span>
-               </button>
+                 <span>Get Started</span>
+               </Link>
             ) : (
                 <button 
                   onClick={() => { handleLogout(); setIsOpen(false); }}

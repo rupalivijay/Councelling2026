@@ -12,7 +12,8 @@
         "category": { "type": "string", "enum": ["General", "OBC", "SC", "ST", "EWS"] },
         "domicile": { "type": "string" },
         "savedColleges": { "type": "array" },
-        "notificationSettings": { "type": "object" }
+        "notificationSettings": { "type": "object" },
+        "isPaid": { "type": "boolean" }
       },
       "required": ["uid", "email"]
     },
@@ -106,9 +107,30 @@
         "rank": { "type": "string" }
       },
       "required": ["studentName", "content", "college"]
+    },
+    "lead": {
+      "title": "Lead / Demo Request",
+      "description": "Contact details from prospective students for demo sessions",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "subject": { "type": "string" },
+        "preferredDate": { "type": "string" },
+        "preferredTime": { "type": "string" },
+        "platform": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "contacted", "converted", "ignored"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "phone", "createdAt"]
     }
   },
   "firestore": {
+    "leads/{leadId}": {
+      "schema": "lead",
+      "description": "Collection of demo session requests and leads"
+    },
     "users/{userId}": {
       "schema": "user",
       "description": "Collection of user profiles"

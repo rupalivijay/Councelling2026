@@ -48,7 +48,8 @@ service cloud.firestore {
         && (data.get('category', 'General') in ['General', 'OBC', 'SC', 'ST', 'EWS'])
         && (data.get('domicile', '') is string && data.domicile.size() <= 50)
         && (data.get('savedColleges', []) is list && data.get('savedColleges', []).size() <= 50)
-        && (data.get('notificationSettings', {}) is map);
+        && (data.get('notificationSettings', {}) is map)
+        && (data.get('isPaid', false) is bool);
     }
 
     function isValidDocument(data) {
@@ -75,13 +76,30 @@ service cloud.firestore {
         && data.status in ['pending', 'scheduled', 'completed', 'cancelled'];
     }
 
+    function isValidLead(data) {
+      return data.keys().hasAll(['name', 'email', 'phone', 'createdAt'])
+        && data.name is string && data.name.size() <= 100
+        && data.email is string && data.email.size() <= 100
+        && data.phone is string && data.phone.size() <= 20
+        && (data.get('subject', '') is string && data.subject.size() <= 200)
+        && (data.get('status', 'new') in ['new', 'contacted', 'converted', 'ignored'])
+        && data.createdAt == request.time;
+    }
+
     // --- Match Rules ---
+
+    match /leads/{leadId} {
+      allow create: if isValidId(leadId) && isValidLead(incoming());
+      allow read, write: if isValidId(leadId) && isAdmin();
+    }
 
     match /users/{userId} {
       allow get: if isValidId(userId) && (isOwner(userId) || isCounselor() || isAdmin());
       allow create: if isValidId(userId) && isOwner(userId) && isValidUser(incoming());
       allow update: if isValidId(userId) && ((isOwner(userId) && isValidUser(incoming()) && (
         incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'category', 'domicile', 'savedColleges', 'notificationSettings'])
+      )) || ((isAdmin() || isCounselor()) && isValidUser(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['isPaid', 'role', 'displayName', 'category', 'domicile', 'savedColleges', 'notificationSettings'])
       )) || isAdmin());
       
       match /documents/{docId} {

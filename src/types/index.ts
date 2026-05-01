@@ -30,6 +30,18 @@ export interface UserDocument {
   required: boolean;
 }
 
+export interface UserProfile {
+  uid: string;
+  displayName: string;
+  email: string;
+  role: 'student' | 'counselor';
+  category?: Category;
+  domicile?: string;
+  savedColleges?: string[];
+  notificationSettings?: NotificationSettings;
+  isPaid?: boolean;
+}
+
 export interface HistoricalData {
   year: number;
   rank: number;
@@ -46,8 +58,9 @@ export interface College {
   };
   choiceCode?: string;
   link: string;
-  type: "Medical" | "Engineering";
+  type: "Medical" | "Engineering" | "Pharmacy";
   quota: QuotaType;
+  ownership?: "Government" | "Private" | "Aided" | "Deemed";
   fees: {
     tuition: number;
     hostel: number;

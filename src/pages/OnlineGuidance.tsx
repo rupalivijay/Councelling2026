@@ -7,6 +7,9 @@ import { cn } from '../lib/utils';
 
 export default function OnlineGuidance() {
   const [formData, setFormData] = React.useState({
+    name: '',
+    email: '',
+    phone: '',
     subject: '',
     date: '',
     time: '',
@@ -15,6 +18,16 @@ export default function OnlineGuidance() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [appointments, setAppointments] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (auth.currentUser) {
+      setFormData(prev => ({
+        ...prev,
+        name: auth.currentUser?.displayName || '',
+        email: auth.currentUser?.email || '',
+      }));
+    }
+  }, [auth.currentUser]);
 
   React.useEffect(() => {
     if (!auth.currentUser) return;
@@ -32,21 +45,48 @@ export default function OnlineGuidance() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
-
+    
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, 'users', auth.currentUser.uid, 'appointments'), {
-        ...formData,
-        studentId: auth.currentUser.uid,
-        studentName: auth.currentUser.displayName,
-        status: 'pending',
-        createdAt: serverTimestamp(),
-      });
+      if (auth.currentUser) {
+        // Authenticated users book an appointment
+        await addDoc(collection(db, 'users', auth.currentUser.uid, 'appointments'), {
+          subject: formData.subject,
+          date: formData.date,
+          time: formData.time,
+          platform: formData.platform,
+          studentId: auth.currentUser.uid,
+          studentName: formData.name || auth.currentUser.displayName,
+          status: 'pending',
+          createdAt: serverTimestamp(),
+        });
+      } else {
+        // Guest users create a lead
+        await addDoc(collection(db, 'leads'), {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          subject: formData.subject,
+          preferredDate: formData.date,
+          preferredTime: formData.time,
+          platform: formData.platform,
+          status: 'new',
+          createdAt: serverTimestamp(),
+        });
+      }
       setIsSuccess(true);
-      setFormData({ subject: '', date: '', time: '', platform: 'Google Meet' });
+      setFormData({ 
+        name: auth.currentUser?.displayName || '', 
+        email: auth.currentUser?.email || '', 
+        phone: '', 
+        subject: '', 
+        date: '', 
+        time: '', 
+        platform: 'Google Meet' 
+      });
     } catch (error) {
       console.error("Booking failed:", error);
+      alert("Failed to submit request. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -61,13 +101,13 @@ export default function OnlineGuidance() {
           className="inline-flex items-center space-x-2 bg-orange-50 px-4 py-2 rounded-full mb-6"
         >
           <Video className="h-4 w-4 text-orange-600" />
-          <span className="text-sm font-bold text-orange-700 uppercase tracking-wider">Book Your Session</span>
+          <span className="text-sm font-bold text-orange-700 uppercase tracking-wider">Book Demo Session</span>
         </motion.div>
         <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight leading-tight">
-          Online Guidance <span className="text-orange-600">at Your Convenience</span>
+          Request a <span className="text-orange-600">Demo Session</span>
         </h1>
         <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-          Need expert advice on college selection or document verification? Book a 1-on-1 online session with our counselors.
+          Experience our expert counseling first-hand. Book a demo session to see how we can help you secure your dream college.
         </p>
       </div>
 
@@ -79,8 +119,8 @@ export default function OnlineGuidance() {
                 <Video className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-black text-slate-900">Virtual Meetings</h3>
-                <p className="text-slate-500 text-sm">Face-to-face guidance via Google Meet or WhatsApp.</p>
+                <h3 className="font-black text-slate-900">Personalized Demo</h3>
+                <p className="text-slate-500 text-sm">See how we analyze your rank for the best colleges.</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -88,8 +128,8 @@ export default function OnlineGuidance() {
                 <Clock className="h-6 w-6 text-emerald-600" />
               </div>
               <div>
-                <h3 className="font-black text-slate-900">Flexible Timing</h3>
-                <p className="text-slate-500 text-sm">Pick a slot that works best for your schedule.</p>
+                <h3 className="font-black text-slate-900">1-on-1 Interaction</h3>
+                <p className="text-slate-500 text-sm">Directly speak with our chief admission strategist.</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -97,25 +137,23 @@ export default function OnlineGuidance() {
                 <MessageSquare className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <h3 className="font-black text-slate-900">Expert Support</h3>
-                <p className="text-slate-500 text-sm">Direct access to our chief admission counselors.</p>
+                <h3 className="font-black text-slate-900">Immediate Clarity</h3>
+                <p className="text-slate-500 text-sm">Get answers to your specific counseling doubts.</p>
               </div>
             </div>
           </div>
 
           <div className="p-8 bg-slate-900 rounded-[2.5rem] text-white">
-            <h4 className="text-xl font-black mb-4">How it works:</h4>
+            <h4 className="text-xl font-black mb-4">What you'll get:</h4>
             <ul className="space-y-4">
               {[
-                'Fill out the request form',
-                'Counselor confirms your slot',
-                'Receive meeting link via email/app',
-                'Join the session at scheduled time'
+                'Overview of counseling process',
+                'Rank-to-College estimation',
+                'Document checklist walkthrough',
+                'Personalized counseling roadmap'
               ].map((step, i) => (
                 <li key={i} className="flex items-center space-x-3 text-slate-300">
-                  <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-orange-400">
-                    {i + 1}
-                  </div>
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                   <span className="font-medium">{step}</span>
                 </li>
               ))}
@@ -133,102 +171,137 @@ export default function OnlineGuidance() {
               <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 className="h-10 w-10 text-emerald-600" />
               </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-2">Request Sent!</h3>
-              <p className="text-slate-500 mb-8">Your meeting request has been submitted. We will confirm your slot shortly.</p>
+              <h3 className="text-2xl font-black text-slate-900 mb-2">Request Submitted!</h3>
+              <p className="text-slate-500 mb-8">Our team will call you within 24 hours to confirm your demo slot.</p>
               <button
                 onClick={() => setIsSuccess(false)}
                 className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-bold hover:bg-slate-800 transition"
               >
-                Book Another
+                Back to Form
               </button>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="relative z-10 space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Subject</label>
-                <input
-                  required
-                  type="text"
-                  placeholder="e.g., JEE Counseling Guidance"
-                  className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 transition"
-                  value={formData.subject}
-                  onChange={e => setFormData({ ...formData, subject: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="Enter your name"
+                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 transition"
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Email ID</label>
                     <input
                       required
-                      type="date"
-                      className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-6 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 transition"
-                      value={formData.date}
-                      onChange={e => setFormData({ ...formData, date: e.target.value })}
+                      type="email"
+                      placeholder="email@example.com"
+                      className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 transition"
+                      value={formData.email}
+                      onChange={e => setFormData({ ...formData, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
+                    <input
+                      required
+                      type="tel"
+                      placeholder="10-digit number"
+                      className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 transition"
+                      value={formData.phone}
+                      onChange={e => setFormData({ ...formData, phone: e.target.value })}
                     />
                   </div>
                 </div>
+
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Time</label>
-                  <div className="relative">
-                    <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                    <input
-                      required
-                      type="time"
-                      className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-6 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 transition"
-                      value={formData.time}
-                      onChange={e => setFormData({ ...formData, time: e.target.value })}
-                    />
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Interested In</label>
+                  <input
+                    required
+                    type="text"
+                    placeholder="e.g., Medical Counseling 2026"
+                    className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 transition"
+                    value={formData.subject}
+                    onChange={e => setFormData({ ...formData, subject: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                      <input
+                        required
+                        type="date"
+                        className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-6 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 transition"
+                        value={formData.date}
+                        onChange={e => setFormData({ ...formData, date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Time</label>
+                    <div className="relative">
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                      <input
+                        required
+                        type="time"
+                        className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-6 py-4 font-bold text-slate-900 focus:ring-2 focus:ring-orange-500 transition"
+                        value={formData.time}
+                        onChange={e => setFormData({ ...formData, time: e.target.value })}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Preferred Platform</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { id: 'Google Meet', icon: Video },
-                    { id: 'WhatsApp', icon: MessageSquare },
-                    { id: 'Phone', icon: Phone }
-                  ].map(platform => (
-                    <button
-                      key={platform.id}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, platform: platform.id as any })}
-                      className={cn(
-                        "flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition gap-2",
-                        formData.platform === platform.id 
-                          ? "bg-orange-50 border-orange-600 text-orange-600" 
-                          : "bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100"
-                      )}
-                    >
-                      <platform.icon className="h-6 w-6" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">{platform.id}</span>
-                    </button>
-                  ))}
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Preferred Platform</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { id: 'Google Meet', icon: Video },
+                      { id: 'WhatsApp', icon: MessageSquare },
+                      { id: 'Phone', icon: Phone }
+                    ].map(platform => (
+                      <button
+                        key={platform.id}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, platform: platform.id as any })}
+                        className={cn(
+                          "flex flex-col items-center justify-center p-4 rounded-3xl border-2 transition gap-2",
+                          formData.platform === platform.id 
+                            ? "bg-orange-50 border-orange-600 text-orange-600" 
+                            : "bg-slate-50 border-transparent text-slate-400 hover:bg-slate-100"
+                        )}
+                      >
+                        <platform.icon className="h-6 w-6" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{platform.id}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <button
-                disabled={isSubmitting || !auth.currentUser}
-                type="submit"
-                className="w-full bg-orange-600 text-white rounded-2xl py-5 font-black text-lg flex items-center justify-center space-x-3 hover:bg-orange-700 transition shadow-2xl shadow-orange-200 disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <div className="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <span>Book Session Now</span>
-                    <Send className="h-5 w-5" />
-                  </>
-                )}
-              </button>
-              
-              {!auth.currentUser && (
-                <p className="text-center text-xs font-bold text-red-500">Please login to book a session</p>
-              )}
+                <button
+                  disabled={isSubmitting}
+                  type="submit"
+                  className="w-full bg-orange-600 text-white rounded-2xl py-5 font-black text-lg flex items-center justify-center space-x-3 hover:bg-orange-700 transition shadow-2xl shadow-orange-200 disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <div className="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>Book Demo Session</span>
+                      <Send className="h-5 w-5" />
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
           )}
         </div>

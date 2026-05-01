@@ -1,12 +1,19 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, MapPin, Award, CheckCircle2, FileDown, Filter, GitCompare, X, Eye, TrendingUp, Zap, Sparkles, Share2 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Search, MapPin, Award, CheckCircle2, FileDown, Filter, GitCompare, X, Eye, TrendingUp, Zap, Sparkles, Share2, Lock, ArrowRight } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { categories, exams, states, quotas, exportToExcel } from '../constants';
-import { College, ExamType, Category, QuotaType } from '../types';
+import { College, ExamType, Category, QuotaType, UserProfile } from '../types';
 import { cn } from '../lib/utils';
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+import { Link } from 'react-router-dom';
+import { getAIInsights } from '../services/geminiService';
+import ReactMarkdown from 'react-markdown';
 
 export default function Predictor() {
+  const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
   const [formData, setFormData] = React.useState({
     rank: '',
     category: Category.GENERAL,
@@ -18,8 +25,11 @@ export default function Predictor() {
   const [allColleges, setAllColleges] = React.useState<College[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [initialLoading, setInitialLoading] = React.useState(true);
+  const [fetchError, setFetchError] = React.useState<string | null>(null);
   const [hasSearched, setHasSearched] = React.useState(false);
-  const [filterType, setFilterType] = React.useState<'All' | 'Medical' | 'Engineering'>('All');
+  const [filterType, setFilterType] = React.useState<'All' | 'Medical' | 'Engineering' | 'Pharmacy'>('All');
+  const [filterState, setFilterState] = React.useState<string>('All');
+  const [filterYear, setFilterYear] = React.useState<number>(2026);
   const [filterQuota, setFilterQuota] = React.useState<'All' | QuotaType>('All');
   const [filterOwnership, setFilterOwnership] = React.useState<'All' | 'Government' | 'Private' | 'Aided' | 'Deemed'>('All');
   const [selectedForCompare, setSelectedForCompare] = React.useState<College[]>([]);
@@ -66,6 +76,9 @@ export default function Predictor() {
     avatarUrl: '',
     rank: ''
   });
+
+  const [aiInsights, setAiInsights] = React.useState<string | null>(null);
+  const [loadingAI, setLoadingAI] = React.useState(false);
 
   const handleTestimonialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,14 +189,18 @@ export default function Predictor() {
 
   React.useEffect(() => {
     const fetchInitialData = async () => {
+      setFetchError(null);
       try {
         const response = await fetch('/api/colleges');
         if (response.ok) {
           const data = await response.json();
           setAllColleges(data);
+        } else {
+          setFetchError(`Server returned ${response.status}: ${response.statusText}`);
         }
       } catch (err) {
         console.error("Error fetching initial college data:", err);
+        setFetchError(err instanceof Error ? err.message : "Failed to connect to server");
       } finally {
         setInitialLoading(false);
       }
@@ -191,8 +208,38 @@ export default function Predictor() {
     fetchInitialData();
   }, []);
 
+  React.useEffect(() => {
+    let unsubUser: (() => void) | null = null;
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        unsubUser = onSnapshot(doc(db, 'users', user.uid), (snapshot) => {
+          if (snapshot.exists()) {
+            setUserProfile({ uid: user.uid, ...snapshot.data() } as UserProfile);
+          } else {
+            // Also check for counselor role which might be in counselors collection if needed
+            // but for simplicity we assume student profiles are in 'users'
+            setUserProfile(null);
+          }
+        });
+      } else {
+        setUserProfile(null);
+        if (unsubUser) { unsubUser(); unsubUser = null; }
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubUser) unsubUser();
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!userProfile?.isPaid && userProfile?.role !== 'counselor') {
+      alert("Access Restricted: This engine is only available for paid students. Please contact Laxmi Education for access.");
+      return;
+    }
     
     const rankVal = parseFloat(formData.rank);
     if (isNaN(rankVal) || rankVal <= 0) {
@@ -202,6 +249,7 @@ export default function Predictor() {
     setRankError(null);
 
     setLoading(true);
+    setFetchError(null);
     try {
       const response = await fetch('/api/predict', {
         method: 'POST',
@@ -211,9 +259,31 @@ export default function Predictor() {
           rank: parseFloat(formData.rank)
         }),
       });
+      
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      }
+      
       const data = await response.json();
       setResults(data);
       setHasSearched(true);
+      setFilterYear(2026);
+
+      // Generate AI Insights
+      setLoadingAI(true);
+      try {
+        const insights = await getAIInsights(
+          parseFloat(formData.rank),
+          formData.category,
+          formData.examType,
+          data
+        );
+        setAiInsights(insights);
+      } catch (err) {
+        console.error("AI Insight Error:", err);
+      } finally {
+        setLoadingAI(false);
+      }
 
       // Scroll to results after a brief delay for state update
       setTimeout(() => {
@@ -221,6 +291,7 @@ export default function Predictor() {
       }, 100);
     } catch (err) {
       console.error(err);
+      setFetchError(err instanceof Error ? err.message : "Failed to fetch prediction results");
     } finally {
       setLoading(false);
     }
@@ -230,10 +301,11 @@ export default function Predictor() {
     return results.filter(c => {
       const typeMatch = filterType === 'All' || c.type === filterType;
       const quotaMatch = filterQuota === 'All' || c.quota === filterQuota;
+      const stateMatch = filterState === 'All' || c.state === filterState;
       const ownershipMatch = filterOwnership === 'All' || c.ownership === filterOwnership;
-      return typeMatch && quotaMatch && ownershipMatch;
+      return typeMatch && quotaMatch && ownershipMatch && stateMatch;
     });
-  }, [results, filterType, filterQuota, filterOwnership]);
+  }, [results, filterType, filterQuota, filterOwnership, filterState]);
 
   const handleShare = (college: College) => {
     const text = `Check out ${college.name} in ${college.city}, ${college.state}. Predicted for my rank by Laxmi Educational Predictor!`;
@@ -308,6 +380,66 @@ export default function Predictor() {
         <p className="text-slate-600 max-w-2xl mx-auto">
           Get precise recommendations based on historical cutoff data for NEET, JEE, and CET. Our smart engine analyzes AIQ and State quota rankings.
         </p>
+
+        {(!userProfile?.isPaid && userProfile?.role !== 'counselor') && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 bg-blue-600 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-blue-200 flex flex-col items-center gap-6 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-10 opacity-10 rotate-12 scale-150">
+              <Lock className="h-32 w-32" />
+            </div>
+            
+            <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/20">
+              <Lock className="h-10 w-10 text-white" />
+            </div>
+            
+            <div className="text-center space-y-4 max-w-lg z-10">
+              <h2 className="text-3xl font-black italic">Premium Access Only</h2>
+              <p className="text-blue-100 font-medium">
+                The predictor engine uses real-time historical data analysis which is exclusive to our paid students. Get your personalized credentials today!
+              </p>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-4 z-10">
+              <Link 
+                to="/guidance"
+                className="bg-white text-blue-600 px-8 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-blue-50 transition"
+              >
+                Book Demo Session
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a 
+                href="https://wa.me/91XXXXXXXXXX" 
+                target="_blank" 
+                className="bg-transparent border-2 border-white/30 text-white px-8 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-white/10 transition"
+              >
+                Contact via WhatsApp
+              </a>
+            </div>
+            
+            {!auth.currentUser && (
+               <p className="text-blue-200 text-sm font-bold mt-2">Already have access? <Link to="/auth" className="text-white underline">Sign In Now</Link></p>
+            )}
+          </motion.div>
+        )}
+
+        {fetchError && (
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-600 px-6 py-3 rounded-2xl text-sm font-bold flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2">
+              <X className="h-4 w-4" />
+              <span>{fetchError}</span>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="text-[10px] uppercase tracking-widest bg-red-600 text-white px-3 py-1 rounded-full hover:bg-red-700 transition"
+            >
+              Retry Connection
+            </button>
+          </div>
+        )}
+
         {!initialLoading && allColleges.length > 0 && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
@@ -546,14 +678,109 @@ export default function Predictor() {
           ref={resultsRef}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-16 space-y-8 scroll-mt-24"
+          className="mt-16 space-y-12 scroll-mt-24"
         >
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex flex-col space-y-4">
-              <h2 className="text-2xl font-bold text-slate-900">Recommended Institutions</h2>
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-100 pb-8">
+            <div className="flex flex-col space-y-4 flex-1">
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight">Predicted Institutions</h2>
+              <p className="text-slate-500 font-medium text-sm">Based on your rank and selected preferences</p>
+            </div>
+            
+            <button
+              onClick={handleDownload}
+              className="flex items-center space-x-2 bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-emerald-700 transition shadow-xl shadow-emerald-200"
+            >
+              <FileDown className="h-5 w-5" />
+              <span>Export results</span>
+            </button>
+          </div>
+
+          {/* AI Guidance Section */}
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2.5rem] blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
+            <div className="relative bg-white rounded-[2.5rem] border border-blue-100 shadow-xl shadow-blue-50/50 p-8 md:p-12">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900">AI Counselor Insights</h3>
+                  <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">Personalized for Your Profile</p>
+                </div>
+                {loadingAI && (
+                  <div className="ml-auto flex items-center gap-2">
+                    <div className="h-4 w-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Analyzing...</span>
+                  </div>
+                )}
+              </div>
+
+              {aiInsights ? (
+                  <div className="prose prose-slate prose-sm max-w-none prose-headings:font-black prose-headings:text-slate-900 prose-p:text-slate-600 prose-p:leading-relaxed prose-li:text-slate-600 prose-strong:text-slate-900 markdown-body">
+                    <ReactMarkdown>{aiInsights}</ReactMarkdown>
+                  </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="h-4 bg-slate-50 rounded-full w-3/4 animate-pulse" />
+                  <div className="h-4 bg-slate-50 rounded-full w-full animate-pulse" />
+                  <div className="h-4 bg-slate-50 rounded-full w-5/6 animate-pulse" />
+                </div>
+              )}
+              
+              <div className="mt-8 pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-xs text-slate-400 font-medium">This analysis is AI-generated based on current trends. For absolute certainty, consult our human experts.</p>
+                <Link 
+                  to="/online-guidance"
+                  className="bg-slate-900 text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition"
+                >
+                  Expert Counseling
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex flex-col space-y-2">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Filter Results by Category & Region</h3>
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-xl w-fit">
-                  {(['All', 'Medical', 'Engineering'] as const).map((type) => (
+                  {[2026, 2025, 2024, 2023].map((y) => (
+                    <button
+                      key={y}
+                      onClick={() => setFilterYear(y)}
+                      className={cn(
+                        "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition",
+                        filterYear === y ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                      )}
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-xl w-fit">
+                  <button
+                    onClick={() => setFilterState('All')}
+                    className={cn(
+                      "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition",
+                      filterState === 'All' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    )}
+                  >
+                    All States
+                  </button>
+                  <button
+                    onClick={() => setFilterState('Maharashtra')}
+                    className={cn(
+                      "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition",
+                      filterState === 'Maharashtra' ? "bg-red-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"
+                    )}
+                  >
+                    Maharashtra
+                  </button>
+                </div>
+
+                <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-xl w-fit">
+                  {(['All', 'Medical', 'Engineering', 'Pharmacy'] as const).map((type) => (
                     <button
                       key={type}
                       onClick={() => setFilterType(type)}
@@ -598,14 +825,6 @@ export default function Predictor() {
                 </div>
               </div>
             </div>
-            
-            <button
-              onClick={handleDownload}
-              className="flex items-center space-x-2 bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200"
-            >
-              <FileDown className="h-5 w-5" />
-              <span>Colleges List (Excel)</span>
-            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
@@ -701,25 +920,39 @@ export default function Predictor() {
                       <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                         {(college.examType === ExamType.CET_PCM || college.examType === ExamType.CET_PCB) ? "Cutoff Percentile" : "Cutoff Ranks"}
                       </h4>
-                      <div className="h-px flex-1 mx-4 bg-slate-100" />
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-tighter">
+                          Year {filterYear}
+                        </span>
+                        <div className="h-px w-8 bg-slate-100" />
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-4 gap-x-2">
-                      {Object.values(Category).map((cat) => (
-                        <div key={cat} className="flex flex-col p-2 rounded-xl bg-white border border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">{cat}</span>
-                          <span className={cn(
-                            "text-xs font-black",
-                            formData.category === cat ? "text-blue-600" : "text-slate-900"
-                          )}>
-                            {college.cutoffRank[cat] ? (
-                              <>
-                                {college.cutoffRank[cat].toLocaleString()}
-                                {(college.examType === ExamType.CET_PCM || college.examType === ExamType.CET_PCB) && "%"}
-                              </>
-                            ) : "N/A"}
-                          </span>
-                        </div>
-                      ))}
+                      {Object.values(Category).map((cat) => {
+                        const getTrendRank = () => {
+                          if (filterYear === 2026) return college.cutoffRank[cat];
+                          const trend = college.historicalTrends?.[cat as Category]?.find(t => t.year === filterYear);
+                          return trend ? trend.rank : null;
+                        };
+                        const displayRank = getTrendRank();
+
+                        return (
+                          <div key={cat} className="flex flex-col p-2 rounded-xl bg-white border border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">{cat}</span>
+                            <span className={cn(
+                              "text-xs font-black",
+                              formData.category === cat ? "text-blue-600" : "text-slate-900"
+                            )}>
+                              {displayRank ? (
+                                <>
+                                  {displayRank.toLocaleString()}
+                                  {(college.examType === ExamType.CET_PCM || college.examType === ExamType.CET_PCB) && "%"}
+                                </>
+                              ) : "N/A"}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -815,6 +1048,9 @@ export default function Predictor() {
                                     return null;
                                   }}
                                 />
+                                {filterYear !== 2026 && (
+                                  <ReferenceLine x={filterYear} stroke="#2563eb" strokeDasharray="3 3" />
+                                )}
                                 <Line 
                                   type="monotone" 
                                   dataKey="rank" 
@@ -861,6 +1097,7 @@ export default function Predictor() {
                       setFilterType('All');
                       setFilterQuota('All');
                       setFilterOwnership('All');
+                      setFilterState('All');
                     } else {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }

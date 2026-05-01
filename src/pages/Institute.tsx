@@ -82,7 +82,7 @@ export default function Institute() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-4 sm:pt-12">
             <StatsBox value="15k+" label="Students Assisted" color="bg-blue-600" />
-            <StatsBox value="500+" label="Top Colleges" color="bg-indigo-600" />
+            <StatsBox value="2,500+" label="Top Colleges" color="bg-indigo-600" />
           </div>
           <div className="space-y-4">
             <StatsBox value="98%" label="Success Rate" color="bg-emerald-600" />

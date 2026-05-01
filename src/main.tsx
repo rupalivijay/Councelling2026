@@ -11,9 +11,10 @@ import Notifications from './pages/Notifications';
 import CounselorDashboard from './pages/CounselorDashboard';
 import AboutCounselor from './pages/AboutCounselor';
 import OnlineGuidance from './pages/OnlineGuidance';
+import Auth from './pages/Auth';
 import './index.css';
 
-console.log("Laxmi Educational: Initializing React App...");
+console.log("Laxmi Education: Initializing React App...");
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="auth" element={<Auth />} />
           <Route path="predictor" element={<Predictor />} />
           <Route path="online-guidance" element={<OnlineGuidance />} />
           <Route path="documents" element={<Documents />} />

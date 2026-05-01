@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Users, FileCheck, AlertCircle, CheckCircle, ExternalLink, ShieldAlert, X, Video, Calendar as CalendarIcon, Clock, Link as LinkIcon, MessageCircle } from 'lucide-react';
+import { Users, FileCheck, AlertCircle, CheckCircle, ExternalLink, ShieldAlert, X, Video, Calendar as CalendarIcon, Clock, Link as LinkIcon, MessageCircle, Phone, Mail } from 'lucide-react';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { collectionGroup, getDocs, doc, updateDoc, getDoc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collectionGroup, getDocs, doc, updateDoc, getDoc, serverTimestamp, query, orderBy, onSnapshot, collection } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { UserDocument, DocumentStatus } from '../types';
 import { cn } from '../lib/utils';
@@ -10,16 +10,20 @@ import ChatWindow from '../components/ChatWindow';
 
 export default function CounselorDashboard() {
   const [students, setStudents] = React.useState<any[]>([]);
+  const [allUsers, setAllUsers] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [isCounselor, setIsCounselor] = React.useState(false);
   const [selectedStudent, setSelectedStudent] = React.useState<any>(null);
   const [feedback, setFeedback] = React.useState("");
-  const [activeTab, setActiveTab] = React.useState<'docs' | 'chat' | 'appointments'>('docs');
+  const [activeTab, setActiveTab] = React.useState<'docs' | 'chat' | 'appointments' | 'leads' | 'students'>('docs');
   const [appointments, setAppointments] = React.useState<any[]>([]);
+  const [leads, setLeads] = React.useState<any[]>([]);
   const [chatUsers, setChatUsers] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     let unsubChats: (() => void) | null = null;
+    let unsubLeads: (() => void) | null = null;
+    let unsubUsers: (() => void) | null = null;
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const counselorDoc = await getDoc(doc(db, 'counselors', user.uid));
@@ -27,6 +31,18 @@ export default function CounselorDashboard() {
           setIsCounselor(true);
           fetchStudents();
           fetchAppointments();
+          
+          // Real-time leads
+          const leadsQuery = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
+          unsubLeads = onSnapshot(leadsQuery, (snapshot) => {
+            setLeads(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          });
+
+          // Real-time all users
+          const usersQuery = query(collection(db, 'users'));
+          unsubUsers = onSnapshot(usersQuery, (snapshot) => {
+            setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          });
           
           // Real-time chat users list
           const q = query(collectionGroup(db, 'messages'), orderBy('timestamp', 'desc'));
@@ -55,20 +71,19 @@ export default function CounselorDashboard() {
       } else {
         setIsCounselor(false);
         setLoading(false);
-        if (unsubChats) {
-          unsubChats();
-          unsubChats = null;
-        }
+        if (unsubChats) { unsubChats(); unsubChats = null; }
+        if (unsubLeads) { unsubLeads(); unsubLeads = null; }
+        if (unsubUsers) { unsubUsers(); unsubUsers = null; }
       }
     });
 
     return () => {
       unsubscribeAuth();
       if (unsubChats) unsubChats();
+      if (unsubLeads) unsubLeads();
+      if (unsubUsers) unsubUsers();
     };
   }, []);
-
-  // Removed fetchChatUsers as it's now handled by onSnapshot in useEffect
 
   const fetchAppointments = async () => {
     try {
@@ -95,10 +110,27 @@ export default function CounselorDashboard() {
     }
   };
 
+  const handleUpdateLead = async (leadId: string, status: string) => {
+    try {
+      await updateDoc(doc(db, 'leads', leadId), { status });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleTogglePaid = async (userId: string, currentStatus: boolean) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        isPaid: !currentStatus
+      });
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update status. Check permissions.");
+    }
+  };
+
   const fetchStudents = async () => {
     try {
-      // In a real app we'd fetch from a users collection
-      // For this demo we'll fetch all document subcollections
       const querySnapshot = await getDocs(collectionGroup(db, 'documents'));
       const docsByStudent: Record<string, any> = {};
       
@@ -124,7 +156,6 @@ export default function CounselorDashboard() {
   const handleStatusUpdate = async (studentId: string, docId: string, status: DocumentStatus) => {
     try {
       setProcessingDocId(docId);
-      // Simulate verification processing time
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       await updateDoc(doc(db, 'users', studentId, 'documents', docId), {
@@ -153,53 +184,50 @@ export default function CounselorDashboard() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-16">
-      <div className="flex justify-between items-end mb-16">
+      <div className="flex flex-wrap justify-between items-end mb-16 gap-4">
         <div>
           <h1 className="text-4xl font-black text-slate-900 mb-2 tracking-tight">Verification Portal</h1>
           <p className="text-slate-500">Review and verify student documents for CAP rounds.</p>
         </div>
-        <div className="flex items-center space-x-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full border border-blue-100">
-           <Users className="h-4 w-4" />
-           <span className="text-sm font-bold">{students.length} Students</span>
-        </div>
-        <div className="flex items-center space-x-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full border border-emerald-100">
-           <MessageCircle className="h-4 w-4" />
-           <span className="text-sm font-bold">{chatUsers.length} Active Chats</span>
-        </div>
-        <div className="flex items-center space-x-2 bg-orange-50 text-orange-700 px-4 py-2 rounded-full border border-orange-100">
-           <Video className="h-4 w-4" />
-           <span className="text-sm font-bold">{appointments.length} Meetings</span>
+        <div className="flex flex-wrap gap-3">
+          <div className="flex items-center space-x-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full border border-blue-100">
+            <Users className="h-4 w-4" />
+            <span className="text-sm font-bold">{students.length} Students</span>
+          </div>
+          <div className="flex items-center space-x-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full border border-emerald-100">
+            <MessageCircle className="h-4 w-4" />
+            <span className="text-sm font-bold">{chatUsers.length} Chats</span>
+          </div>
+          <div className="flex items-center space-x-2 bg-orange-50 text-orange-700 px-4 py-2 rounded-full border border-orange-100">
+            <Video className="h-4 w-4" />
+            <span className="text-sm font-bold">{appointments.length} Sessions</span>
+          </div>
+          <div className="flex items-center space-x-2 bg-purple-50 text-purple-700 px-4 py-2 rounded-full border border-purple-100">
+            <Users className="h-4 w-4" />
+            <span className="text-sm font-bold">{leads.length} Leads</span>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white p-2 rounded-2xl border border-slate-200 mb-8 flex space-x-2 max-w-lg">
-        <button 
-          onClick={() => setActiveTab('docs')}
-          className={cn(
-            "flex-1 py-2 px-4 rounded-xl text-sm font-bold transition",
-            activeTab === 'docs' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
-          )}
-        >
-          Check Documents
-        </button>
-        <button 
-          onClick={() => setActiveTab('appointments')}
-          className={cn(
-            "flex-1 py-2 px-4 rounded-xl text-sm font-bold transition",
-            activeTab === 'appointments' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
-          )}
-        >
-          Manage Meetings
-        </button>
-        <button 
-          onClick={() => setActiveTab('chat')}
-          className={cn(
-            "flex-1 py-2 px-4 rounded-xl text-sm font-bold transition",
-            activeTab === 'chat' ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
-          )}
-        >
-          Student Chats
-        </button>
+      <div className="bg-white p-2 rounded-2xl border border-slate-200 mb-8 flex space-x-2 overflow-x-auto">
+        {[
+          { id: 'docs', label: 'Check Documents' },
+          { id: 'students', label: 'Manage Access' },
+          { id: 'appointments', label: 'Manage Meetings' },
+          { id: 'leads', label: 'Demo Requests' },
+          { id: 'chat', label: 'Student Chats' }
+        ].map((tab) => (
+          <button 
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={cn(
+              "whitespace-nowrap py-2 px-4 rounded-xl text-sm font-bold transition",
+              activeTab === tab.id ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <div className="space-y-6">
@@ -332,6 +360,144 @@ export default function CounselorDashboard() {
                   </div>
                 </motion.div>
               ))
+            )}
+          </div>
+        ) : activeTab === 'leads' ? (
+          <div className="grid gap-6">
+            {leads.length === 0 ? (
+              <div className="text-center py-20 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                <Users className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 font-bold">No demo requests yet.</p>
+              </div>
+            ) : (
+              leads.map((lead) => (
+                <motion.div
+                  key={lead.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between gap-8"
+                >
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full",
+                        lead.status === 'new' ? "bg-purple-100 text-purple-600" :
+                        lead.status === 'contacted' ? "bg-blue-100 text-blue-600" :
+                        lead.status === 'converted' ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-600"
+                      )}>
+                        {lead.status}
+                      </span>
+                      <span className="text-xs font-bold text-slate-400">{lead.createdAt?.toDate().toLocaleDateString()}</span>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-900 mb-1">{lead.name}</h3>
+                      <p className="text-slate-500 font-bold">{lead.subject}</p>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <a href={`tel:${lead.phone}`} className="flex items-center space-x-3 text-slate-600 hover:text-blue-600 transition">
+                        <div className="p-2 bg-slate-50 rounded-xl"><Phone className="h-4 w-4" /></div>
+                        <span className="font-bold">{lead.phone}</span>
+                      </a>
+                      <a href={`mailto:${lead.email}`} className="flex items-center space-x-3 text-slate-600 hover:text-blue-600 transition">
+                        <div className="p-2 bg-slate-50 rounded-xl"><Mail className="h-4 w-4" /></div>
+                        <span className="font-bold">{lead.email}</span>
+                      </a>
+                    </div>
+
+                    <div className="flex items-center space-x-6 text-sm font-bold text-slate-400">
+                      <div className="flex items-center space-x-1.5"><CalendarIcon className="h-4 w-4" /><span>{lead.preferredDate}</span></div>
+                      <div className="flex items-center space-x-1.5"><Clock className="h-4 w-4" /><span>{lead.preferredTime}</span></div>
+                      <div className="flex items-center space-x-1.5 text-orange-600"><Video className="h-4 w-4" /><span>{lead.platform}</span></div>
+                    </div>
+                  </div>
+
+                  <div className="flex md:flex-col justify-end gap-3">
+                    <button 
+                      onClick={() => handleUpdateLead(lead.id, 'contacted')}
+                      className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-sm shadow-lg shadow-blue-100 hover:bg-blue-700 transition"
+                    >
+                      Mark Contacted
+                    </button>
+                    <button 
+                      onClick={() => handleUpdateLead(lead.id, 'converted')}
+                      className="bg-emerald-50 text-emerald-600 px-6 py-3 rounded-2xl font-black text-sm hover:bg-emerald-100 transition"
+                    >
+                      Converted
+                    </button>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        ) : activeTab === 'students' ? (
+          <div className="grid gap-6">
+            {allUsers.length === 0 ? (
+                <div className="text-center py-20 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                    <Users className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-500 font-bold">No students registered yet.</p>
+                </div>
+            ) : (
+                <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-100">
+                                <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Student Info</th>
+                                <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                                <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {allUsers.map((user) => (
+                                <tr key={user.id} className="hover:bg-slate-50/50 transition">
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center space-x-4">
+                                            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center font-black text-blue-600 text-xl">
+                                                {user.displayName?.charAt(0) || user.email?.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-extrabold text-slate-900">{user.displayName || "Incomplete Profile"}</h4>
+                                                <p className="text-xs text-slate-500 font-medium">{user.email}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6">
+                                        <div className="flex items-center space-x-2">
+                                            <div className={cn(
+                                                "h-2 w-2 rounded-full",
+                                                user.isPaid ? "bg-emerald-500" : "bg-slate-300"
+                                            )} />
+                                            <span className={cn(
+                                                "text-xs font-black uppercase tracking-tighter",
+                                                user.isPaid ? "text-emerald-600" : "text-slate-400"
+                                            )}>
+                                                {user.isPaid ? "Paid Access" : "Free Access"}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-6 text-right">
+                                        {user.role !== 'counselor' ? (
+                                            <button 
+                                                onClick={() => handleTogglePaid(user.id, !!user.isPaid)}
+                                                className={cn(
+                                                    "px-6 py-2.5 rounded-xl font-black text-xs transition shadow-lg",
+                                                    user.isPaid 
+                                                        ? "bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-600 shadow-none" 
+                                                        : "bg-emerald-600 text-white shadow-emerald-100 hover:bg-emerald-700"
+                                                )}
+                                            >
+                                                {user.isPaid ? "Revoke Access" : "Grant Access"}
+                                            </button>
+                                        ) : (
+                                            <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Counselor</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
           </div>
         ) : activeTab === 'chat' ? (
