@@ -237,7 +237,10 @@ export default function Predictor() {
     e.preventDefault();
     
     if (!userProfile?.isPaid && userProfile?.role !== 'counselor') {
-      alert("Access Restricted: This engine is only available for paid students. Please contact Laxmi Education for access.");
+      // The UI already shows the restriction card, so we don't need a redundant alert
+      // We can also redirect them to a pricing page or scroll them to the card
+      const card = document.getElementById('premium-card');
+      card?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
     
@@ -383,6 +386,7 @@ export default function Predictor() {
 
         {(!userProfile?.isPaid && userProfile?.role !== 'counselor') && (
           <motion.div 
+            id="premium-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-8 bg-blue-600 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-blue-200 flex flex-col items-center gap-6 relative overflow-hidden"
@@ -404,10 +408,10 @@ export default function Predictor() {
 
             <div className="flex flex-wrap justify-center gap-4 z-10">
               <Link 
-                to="/guidance"
+                to="/pricing"
                 className="bg-white text-blue-600 px-8 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-blue-50 transition"
               >
-                Book Demo Session
+                View Unlock Plans
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <a 

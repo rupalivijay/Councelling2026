@@ -49,8 +49,7 @@ service cloud.firestore {
         && (data.get('domicile', '') is string && data.get('domicile', '').size() <= 50)
         && (data.get('savedColleges', []) is list && data.get('savedColleges', []).size() <= 50)
         && (data.get('notificationSettings', {}) is map)
-        && (data.get('isPaid', false) is bool)
-        && (data.get('createdAt', request.time) == request.time);
+        && (data.get('isPaid', false) is bool);
     }
 
     function isValidDocument(data) {
@@ -96,11 +95,13 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isValidId(userId) && (isOwner(userId) || isCounselor() || isAdmin());
-      allow create: if isValidId(userId) && isOwner(userId) && isValidUser(incoming());
+      allow create: if isValidId(userId) && isOwner(userId) && isValidUser(incoming()) && (
+          incoming().get('createdAt', request.time) == request.time
+      );
       allow update: if isValidId(userId) && ((isOwner(userId) && isValidUser(incoming()) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'category', 'domicile', 'savedColleges', 'notificationSettings'])
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'category', 'domicile', 'savedColleges', 'notificationSettings', 'isPaid', 'planType', 'updatedAt'])
       )) || ((isAdmin() || isCounselor()) && isValidUser(incoming()) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['isPaid', 'role', 'displayName', 'category', 'domicile', 'savedColleges', 'notificationSettings'])
+        incoming().diff(existing()).affectedKeys().hasOnly(['isPaid', 'role', 'displayName', 'category', 'domicile', 'savedColleges', 'notificationSettings', 'planType', 'updatedAt'])
       )) || isAdmin());
       
       match /documents/{docId} {

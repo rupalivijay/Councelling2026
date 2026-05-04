@@ -12,6 +12,7 @@ import CounselorDashboard from './pages/CounselorDashboard';
 import AboutCounselor from './pages/AboutCounselor';
 import OnlineGuidance from './pages/OnlineGuidance';
 import Auth from './pages/Auth';
+import Pricing from './pages/Pricing';
 import './index.css';
 
 console.log("Laxmi Education: Initializing React App...");
@@ -31,6 +32,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="settings" element={<StudentDashboard />} />
           <Route path="counselor" element={<CounselorDashboard />} />
           <Route path="about" element={<AboutCounselor />} />
+          <Route path="pricing" element={<Pricing />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

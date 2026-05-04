@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Bell, Mail, Calendar, Sparkles, Save, ShieldCheck, MessageCircle, Settings as SettingsIcon } from 'lucide-react';
+import { Bell, Mail, Calendar, Sparkles, Save, ShieldCheck, MessageCircle, Settings as SettingsIcon, CreditCard, ChevronRight, Check } from 'lucide-react';
 import { db, auth } from '../lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -18,15 +18,20 @@ export default function StudentDashboard() {
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [user, setUser] = React.useState<any>(null);
-  const [activeTab, setActiveTab] = React.useState<'messages' | 'settings'>('messages');
+  const [profile, setProfile] = React.useState<any>(null);
+  const [activeTab, setActiveTab] = React.useState<'messages' | 'settings' | 'account'>('messages');
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
         const userDoc = await getDoc(doc(db, 'users', u.uid));
-        if (userDoc.exists() && userDoc.data().notificationSettings) {
-          setSettings(userDoc.data().notificationSettings);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          setProfile(data);
+          if (data.notificationSettings) {
+            setSettings(data.notificationSettings);
+          }
         }
       }
       setLoading(false);
@@ -84,9 +89,85 @@ export default function StudentDashboard() {
           <SettingsIcon className="h-4 w-4" />
           <span>Settings</span>
         </button>
+        <button
+          onClick={() => setActiveTab('account')}
+          className={cn(
+            "flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-black transition",
+            activeTab === 'account' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+          )}
+        >
+          <CreditCard className="h-4 w-4" />
+          <span>Plan</span>
+        </button>
       </div>
 
-      {activeTab === 'settings' ? (
+      {activeTab === 'account' ? (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl"
+        >
+            <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm p-8 md:p-10">
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Membership</h3>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-2xl font-black text-slate-900">{profile?.isPaid ? (profile.planType || 'Predictor Pro') : 'Free Starter'}</h2>
+                            {profile?.isPaid && (
+                                <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">Active</span>
+                            )}
+                        </div>
+                    </div>
+                    <div className={cn(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center",
+                        profile?.isPaid ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-slate-100 text-slate-400"
+                    )}>
+                        <CreditCard className="h-6 w-6" />
+                    </div>
+                </div>
+
+                <div className="bg-slate-50 rounded-3xl p-6 mb-8">
+                    <p className="text-sm text-slate-600 font-medium mb-4">
+                        {profile?.isPaid 
+                            ? "You have full access to all premium features including the AI Predictor Engine and historical data."
+                            : "Unlock the full potential of Laxmi Education by upgrading to a premium plan."
+                        }
+                    </p>
+                    <div className="flex items-center gap-4">
+                        <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 text-xs font-black">
+                            {profile?.isPaid ? 'Next billing: Never (One-time)' : 'Predictor: Locked'}
+                        </div>
+                    </div>
+                </div>
+
+                {!profile?.isPaid ? (
+                    <button 
+                        onClick={() => window.location.href = '/pricing'}
+                        className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-blue-100 hover:bg-blue-700 transition"
+                    >
+                        <span>View Plans & Upgrade</span>
+                        <ChevronRight className="h-4 w-4" />
+                    </button>
+                ) : (
+                    <div className="border-t border-slate-100 pt-8 mt-2">
+                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Transaction History</h4>
+                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
+                                    <Check className="h-4 w-4" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black text-slate-900">One-time Unlock</p>
+                                    <p className="text-[10px] text-slate-500 font-bold">Successfully processed</p>
+                                </div>
+                            </div>
+                            <span className="text-xs font-black text-slate-900">-₹499.00</span>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </motion.div>
+      ) : activeTab === 'settings' ? (
         <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

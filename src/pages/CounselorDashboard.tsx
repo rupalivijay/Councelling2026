@@ -487,7 +487,7 @@ export default function CounselorDashboard() {
                                                         : "bg-emerald-600 text-white shadow-emerald-100 hover:bg-emerald-700"
                                                 )}
                                             >
-                                                {user.isPaid ? "Revoke Access" : "Grant Access"}
+                                                {user.isPaid ? "Revoke Permission" : "Enable Permission"}
                                             </button>
                                         ) : (
                                             <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Counselor</span>

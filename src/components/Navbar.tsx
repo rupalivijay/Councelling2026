@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { GraduationCap, FileText, Building2, Calendar, Menu, X, LogIn, LogOut, User, Settings, ShieldCheck, UserCheck, Library, Video } from 'lucide-react';
+import { GraduationCap, FileText, Building2, Calendar, Menu, X, LogIn, LogOut, User, Settings, ShieldCheck, UserCheck, Library, Video, CreditCard } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
@@ -12,6 +12,7 @@ const navItems = [
   { name: 'Document Vault', path: '/documents', icon: FileText },
   { name: 'Institute', path: '/institute', icon: Building2 },
   { name: 'Schedule', path: '/schedule', icon: Calendar },
+  { name: 'Pricing', path: '/pricing', icon: CreditCard },
   { name: 'About Counselor', path: '/about', icon: UserCheck },
 ];
 
