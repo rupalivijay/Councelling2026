@@ -75,7 +75,9 @@ export default function Auth() {
       }
     } catch (err: any) {
       console.error(err);
-      if (err.code === 'auth/email-already-in-use') {
+      if (err.code === 'auth/operation-not-allowed') {
+        setError("Sign-in method is disabled. Please enable it in the Firebase Console.");
+      } else if (err.code === 'auth/email-already-in-use') {
         setError("Email already registered. Try logging in.");
       } else if (err.code === 'auth/wrong-password') {
         setError("Incorrect password.");
@@ -93,6 +95,7 @@ export default function Auth() {
     const provider = new GoogleAuthProvider();
     try {
       setLoading(true);
+      setError(null);
       const result = await signInWithPopup(auth, provider);
       const u = result.user;
       
@@ -103,7 +106,7 @@ export default function Auth() {
         await setDoc(userRef, {
           uid: u.uid,
           email: u.email,
-          displayName: u.displayName,
+          displayName: u.displayName || 'User',
           role: 'student',
           isPaid: false,
           createdAt: serverTimestamp(),
@@ -119,7 +122,15 @@ export default function Auth() {
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error(err);
-      setError("Google login failed. Please try again.");
+      if (err.code === 'auth/operation-not-allowed') {
+        setError("Google sign-in is disabled. Please enable it in the Firebase Console.");
+      } else if (err.code === 'auth/popup-blocked') {
+        setError("Popup blocked. Please allow popups for this site.");
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setError("Login cancelled.");
+      } else {
+        setError(err.message || "Google login failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
