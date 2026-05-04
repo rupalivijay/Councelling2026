@@ -93,7 +93,7 @@ export default function Layout() {
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 border-2 border-blue-600 rounded-full animate-pulse" />
               </div>
               <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-bold text-sm whitespace-nowrap">
-                Student Support AI
+                Counselor & AI Support
               </span>
             </button>
           )}

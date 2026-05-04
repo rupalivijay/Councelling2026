@@ -56,7 +56,7 @@ export default function Navbar() {
                   e.currentTarget.src = "https://placehold.co/100x100/f97316/ffffff?text=LE";
                 }}
               />
-              <span className="text-xl font-bold text-slate-900 tracking-tight">Laxmi Educational</span>
+              <span className="text-xl font-bold text-slate-900 tracking-tight">Laxmi Education</span>
             </Link>
           </div>
 
@@ -80,8 +80,8 @@ export default function Navbar() {
 
             {user ? (
               <div className="flex items-center space-x-4">
-                <Link to="/settings" className="p-2 text-slate-400 hover:text-blue-600 transition" title="Notification Settings">
-                    <Settings className="h-5 w-5" />
+                <Link to="/settings" className="p-2 text-slate-400 hover:text-blue-600 transition" title="Student Dashboard">
+                    <User className="h-5 w-5" />
                 </Link>
                 {isCounselor && (
                     <Link to="/counselor" className="p-2 text-slate-400 hover:text-emerald-600 transition" title="Counselor Dashboard">
