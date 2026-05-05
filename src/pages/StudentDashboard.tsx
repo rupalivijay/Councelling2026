@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Bell, Mail, Calendar, Sparkles, Save, ShieldCheck, MessageCircle, Settings as SettingsIcon, CreditCard, ChevronRight, Check } from 'lucide-react';
+import { Bell, Mail, Calendar, Sparkles, Save, ShieldCheck, MessageCircle, Settings as SettingsIcon, CreditCard, ChevronRight, Check, User, Phone, MapPin, UserCircle } from 'lucide-react';
 import { db, auth } from '../lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -19,7 +19,14 @@ export default function StudentDashboard() {
   const [saving, setSaving] = React.useState(false);
   const [user, setUser] = React.useState<any>(null);
   const [profile, setProfile] = React.useState<any>(null);
-  const [activeTab, setActiveTab] = React.useState<'messages' | 'settings' | 'account'>('messages');
+  const [activeTab, setActiveTab] = React.useState<'messages' | 'settings' | 'account' | 'profile'>('messages');
+
+  const [editProfile, setEditProfile] = React.useState({
+    displayName: '',
+    phone: '',
+    domicile: '',
+    category: 'General'
+  });
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -29,6 +36,12 @@ export default function StudentDashboard() {
         if (userDoc.exists()) {
           const data = userDoc.data();
           setProfile(data);
+          setEditProfile({
+            displayName: data.displayName || u.displayName || '',
+            phone: data.phone || '',
+            domicile: data.domicile || '',
+            category: data.category || 'General'
+          });
           if (data.notificationSettings) {
             setSettings(data.notificationSettings);
           }
@@ -43,7 +56,7 @@ export default function StudentDashboard() {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSave = async () => {
+  const handleSaveSettings = async () => {
     if (!user) return;
     setSaving(true);
     try {
@@ -59,6 +72,24 @@ export default function StudentDashboard() {
     }
   };
 
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        ...editProfile,
+        updatedAt: new Date()
+      });
+      setProfile({ ...profile, ...editProfile });
+      alert("Profile updated successfully!");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) return <div className="p-20 text-center font-bold text-slate-500">Loading your profile...</div>;
 
   return (
@@ -68,11 +99,11 @@ export default function StudentDashboard() {
         <p className="text-slate-500 font-medium">Manage your settings and communicate with counselors.</p>
       </div>
 
-      <div className="flex bg-slate-100 p-1 rounded-2xl mb-8 w-fit">
+      <div className="flex bg-slate-100 p-1 rounded-2xl mb-8 w-fit overflow-x-auto">
         <button
           onClick={() => setActiveTab('messages')}
           className={cn(
-            "flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-black transition",
+            "flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-black transition whitespace-nowrap",
             activeTab === 'messages' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
           )}
         >
@@ -80,9 +111,19 @@ export default function StudentDashboard() {
           <span>Messages</span>
         </button>
         <button
+          onClick={() => setActiveTab('profile')}
+          className={cn(
+            "flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-black transition whitespace-nowrap",
+            activeTab === 'profile' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+          )}
+        >
+          <User className="h-4 w-4" />
+          <span>Profile</span>
+        </button>
+        <button
           onClick={() => setActiveTab('settings')}
           className={cn(
-            "flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-black transition",
+            "flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-black transition whitespace-nowrap",
             activeTab === 'settings' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
           )}
         >
@@ -92,7 +133,7 @@ export default function StudentDashboard() {
         <button
           onClick={() => setActiveTab('account')}
           className={cn(
-            "flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-black transition",
+            "flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-black transition whitespace-nowrap",
             activeTab === 'account' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
           )}
         >
@@ -101,7 +142,94 @@ export default function StudentDashboard() {
         </button>
       </div>
 
-      {activeTab === 'account' ? (
+      {activeTab === 'profile' ? (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl"
+        >
+            <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm p-8 md:p-10">
+                <h2 className="text-2xl font-black text-slate-900 mb-8">Personal Information</h2>
+                
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                            <div className="relative">
+                                <UserCircle className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                                <input 
+                                    type="text" 
+                                    value={editProfile.displayName}
+                                    onChange={(e) => setEditProfile({...editProfile, displayName: e.target.value})}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-6 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition"
+                                    placeholder="Enter your full name"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
+                            <div className="relative">
+                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                                <input 
+                                    type="tel" 
+                                    value={editProfile.phone}
+                                    onChange={(e) => setEditProfile({...editProfile, phone: e.target.value})}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-6 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition"
+                                    placeholder="Enter mobile number"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Domicile District</label>
+                            <div className="relative">
+                                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                                <input 
+                                    type="text" 
+                                    value={editProfile.domicile}
+                                    onChange={(e) => setEditProfile({...editProfile, domicile: e.target.value})}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-6 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition"
+                                    placeholder="E.g. Pune, Mumbai"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
+                            <select 
+                                value={editProfile.category}
+                                onChange={(e) => setEditProfile({...editProfile, category: e.target.value})}
+                                className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition appearance-none"
+                            >
+                                <option value="General">General (OPEN)</option>
+                                <option value="OBC">OBC</option>
+                                <option value="SC">SC</option>
+                                <option value="ST">ST</option>
+                                <option value="EWS">EWS</option>
+                                <option value="VJ/DT/NT">VJ/DT/NT</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="pt-6">
+                        <button 
+                            onClick={handleSaveProfile}
+                            disabled={saving}
+                            className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-800 transition disabled:opacity-50"
+                        >
+                            <Save className="h-4 w-4" />
+                            <span>{saving ? 'Saving...' : 'Update Profile Information'}</span>
+                        </button>
+                    </div>
+
+                    <p className="text-[10px] text-slate-400 font-bold text-center uppercase tracking-widest">
+                        This information helps counselors provide accurate guidance.
+                    </p>
+                </div>
+            </div>
+        </motion.div>
+      ) : activeTab === 'account' ? (
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -171,54 +299,51 @@ export default function StudentDashboard() {
         <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm max-w-2xl"
+            className="max-w-2xl space-y-4"
         >
-            <div className="p-8 md:p-10 space-y-8">
-            <SettingItem 
-                icon={Calendar} 
-                title="Schedule Updates" 
-                description="Get notified when counseling dates change or new sessions are added."
-                active={settings.scheduleUpdates}
-                onToggle={() => toggleSetting('scheduleUpdates')}
-            />
-            <SettingItem 
-                icon={Sparkles} 
-                title="Merit List Alerts" 
-                description="Instant notification when state or national merit lists are released."
-                active={settings.meritListAlerts}
-                onToggle={() => toggleSetting('meritListAlerts')}
-            />
-            <SettingItem 
-                icon={Bell} 
-                title="Choice Filling Reminders" 
-                description="We'll remind you before the locking deadline for every CAP round."
-                active={settings.choiceFillingReminders}
-                onToggle={() => toggleSetting('choiceFillingReminders')}
-            />
-            
-            <div className="pt-8 border-t border-slate-100">
+            <div className="space-y-4">
                 <SettingItem 
-                icon={Mail} 
-                title="Email Notifications" 
-                description="Receive weekly summaries and important announcements via email."
-                active={settings.emailNotifications}
-                onToggle={() => toggleSetting('emailNotifications')}
+                    icon={Calendar} 
+                    title="Schedule Updates" 
+                    description="Get notified when counseling dates change or new sessions are added."
+                    active={settings.scheduleUpdates}
+                    onToggle={() => toggleSetting('scheduleUpdates')}
+                />
+                <SettingItem 
+                    icon={Sparkles} 
+                    title="Merit List Alerts" 
+                    description="Instant notification when state or national merit lists are released."
+                    active={settings.meritListAlerts}
+                    onToggle={() => toggleSetting('meritListAlerts')}
+                />
+                <SettingItem 
+                    icon={Bell} 
+                    title="Choice Filling Reminders" 
+                    description="We'll remind you before the locking deadline for every CAP round."
+                    active={settings.choiceFillingReminders}
+                    onToggle={() => toggleSetting('choiceFillingReminders')}
+                />
+                <SettingItem 
+                    icon={Mail} 
+                    title="Email Notifications" 
+                    description="Receive weekly summaries and important announcements via email."
+                    active={settings.emailNotifications}
+                    onToggle={() => toggleSetting('emailNotifications')}
                 />
             </div>
-            </div>
 
-            <div className="bg-slate-50 px-8 py-6 flex justify-between items-center">
+            <div className="bg-white rounded-[2rem] border border-slate-100 px-8 py-6 flex justify-between items-center shadow-sm">
                 <div className="flex items-center space-x-2 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
                     <ShieldCheck className="h-4 w-4" />
                     <span>Privacy Guaranteed</span>
                 </div>
                 <button 
-                    onClick={handleSave}
+                    onClick={handleSaveSettings}
                     disabled={saving}
-                    className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition disabled:opacity-50"
+                    className="flex items-center space-x-2 bg-blue-600 text-white px-8 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition disabled:opacity-50"
                 >
                     <Save className="h-4 w-4" />
-                    <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                    <span>{saving ? 'Saving...' : 'Save Settings'}</span>
                 </button>
             </div>
         </motion.div>
@@ -275,30 +400,51 @@ function SettingItem({ icon: Icon, title, description, active, onToggle }: {
   icon: any, title: string, description: string, active: boolean, onToggle: () => void 
 }) {
   return (
-    <div className="flex items-start justify-between group">
-      <div className="flex space-x-4">
+    <div 
+      onClick={onToggle}
+      className={cn(
+        "flex items-center justify-between p-6 rounded-3xl border-2 transition-all cursor-pointer group",
+        active 
+          ? "border-blue-600/20 bg-blue-50/50 shadow-sm shadow-blue-100/50" 
+          : "border-slate-100 bg-white hover:border-slate-200"
+      )}
+    >
+      <div className="flex items-center gap-6">
         <div className={cn(
-            "p-3 rounded-2xl transition",
-            active ? "bg-blue-50 text-blue-600" : "bg-slate-50 text-slate-400 group-hover:bg-slate-100"
+            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
+            active ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "bg-slate-100 text-slate-400"
         )}>
           <Icon className="h-6 w-6" />
         </div>
-        <div className="max-w-sm">
-          <h3 className="text-lg font-bold text-slate-900 mb-1">{title}</h3>
-          <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
+        <div className="max-w-md">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-lg font-black text-slate-900 leading-none">{title}</h3>
+            <span className={cn(
+              "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest",
+              active ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-500"
+            )}>
+              {active ? 'Enabled' : 'Disabled'}
+            </span>
+          </div>
+          <p className="text-sm text-slate-500 font-medium leading-relaxed">{description}</p>
         </div>
       </div>
+
       <button 
-        onClick={onToggle}
+        type="button"
+        role="switch"
+        aria-checked={active}
         className={cn(
-          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+          "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ring-offset-2 focus:ring-2 focus:ring-blue-500",
           active ? "bg-blue-600" : "bg-slate-200"
         )}
       >
         <span className={cn(
-          "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+          "pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out flex items-center justify-center",
           active ? "translate-x-5" : "translate-x-0"
-        )} />
+        )}>
+          {active && <Check className="h-3 w-3 text-blue-600" strokeWidth={4} />}
+        </span>
       </button>
     </div>
   );

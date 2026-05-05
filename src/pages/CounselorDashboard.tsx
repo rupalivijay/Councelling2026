@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Users, FileCheck, AlertCircle, CheckCircle, ExternalLink, ShieldAlert, X, Video, Calendar as CalendarIcon, Clock, Link as LinkIcon, MessageCircle, Phone, Mail } from 'lucide-react';
+import { Users, FileCheck, AlertCircle, CheckCircle, ExternalLink, ShieldAlert, X, Video, Calendar as CalendarIcon, Clock, Link as LinkIcon, MessageCircle, Phone, Mail, MapPin } from 'lucide-react';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { collectionGroup, getDocs, doc, updateDoc, getDoc, serverTimestamp, query, orderBy, onSnapshot, collection } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -458,7 +458,24 @@ export default function CounselorDashboard() {
                                             </div>
                                             <div>
                                                 <h4 className="font-extrabold text-slate-900">{user.displayName || "Incomplete Profile"}</h4>
-                                                <p className="text-xs text-slate-500 font-medium">{user.email}</p>
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-1 text-[10px] text-slate-500 font-bold">
+                                                        <Mail className="h-3 w-3" />
+                                                        <span>{user.email}</span>
+                                                    </div>
+                                                    {user.phone && (
+                                                        <div className="flex items-center gap-1 text-[10px] text-blue-600 font-bold">
+                                                            <Phone className="h-3 w-3" />
+                                                            <span>{user.phone}</span>
+                                                        </div>
+                                                    )}
+                                                    {user.domicile && (
+                                                        <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold">
+                                                            <MapPin className="h-3 w-3" />
+                                                            <span>{user.domicile} ({user.category || 'General'})</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </td>

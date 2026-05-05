@@ -11,7 +11,6 @@ const navItems = [
   { name: 'Online Guidance', path: '/online-guidance', icon: Video },
   { name: 'Document Vault', path: '/documents', icon: FileText },
   { name: 'Institute', path: '/institute', icon: Building2 },
-  { name: 'Schedule', path: '/schedule', icon: Calendar },
   { name: 'Pricing', path: '/pricing', icon: CreditCard },
   { name: 'About Counselor', path: '/about', icon: UserCheck },
 ];
