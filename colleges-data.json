@@ -236,7 +236,7 @@
     "fees": { "tuition": 135000, "hostel": 40000 }
   },
   {
-    "id": "ycce-nagpur",
+    "id": "ycce-nagpur-cet",
     "name": "Yeshwantrao Chavan College of Engineering",
     "state": "Maharashtra",
     "city": "Nagpur",
@@ -348,7 +348,7 @@
     "fees": { "tuition": 190000, "hostel": 50000 }
   },
   {
-    "id": "viit-pune",
+    "id": "viit-pune-alt",
     "name": "Vishwakarma Institute of Information Technology",
     "state": "Maharashtra",
     "city": "Pune",
@@ -530,7 +530,7 @@
     "fees": { "tuition": 120000, "hostel": 40000 }
   },
   {
-    "id": "tsec-mumbai",
+    "id": "tsec-mumbai-cl",
     "name": "Thadomal Shahani Engineering College",
     "state": "Maharashtra",
     "city": "Mumbai",
@@ -544,7 +544,7 @@
     "fees": { "tuition": 185000, "hostel": 45000 }
   },
   {
-    "id": "gcoe-amravati",
+    "id": "gcoe-amravati-old",
     "name": "Government College of Engineering",
     "state": "Maharashtra",
     "city": "Amravati",
@@ -1496,7 +1496,7 @@
     "fees": { "tuition": 135000, "hostel": 55000 }
   },
   {
-    "id": "tsec-mumbai",
+    "id": "tsec-mumbai-alt",
     "name": "Thadomal Shahani Engineering College",
     "state": "Maharashtra",
     "city": "Bandra (Mumbai)",
@@ -1510,7 +1510,7 @@
     "fees": { "tuition": 185000, "hostel": 60000 }
   },
   {
-    "id": "vesit-mumbai",
+    "id": "vesit-mumbai-alt",
     "name": "Vivekanand Education Society's Institute of Technology",
     "state": "Maharashtra",
     "city": "Chembur (Mumbai)",
@@ -1594,7 +1594,7 @@
     "fees": { "tuition": 110000, "hostel": 50000 }
   },
   {
-    "id": "vit-pune",
+    "id": "vit-pune-alt",
     "name": "Vishwakarma Institute of Technology (VIT)",
     "state": "Maharashtra",
     "city": "Bibwewadi (Pune)",
@@ -1608,7 +1608,7 @@
     "fees": { "tuition": 185000, "hostel": 45000 }
   },
   {
-    "id": "walchand-sangli",
+    "id": "walchand-sangli-cet",
     "name": "Walchand College of Engineering",
     "state": "Maharashtra",
     "city": "Sangli",
@@ -1622,7 +1622,7 @@
     "fees": { "tuition": 85000, "hostel": 25000 }
   },
   {
-    "id": "gcoe-amravati",
+    "id": "gcoe-amravati-cet",
     "name": "Government College of Engineering",
     "state": "Maharashtra",
     "city": "Amravati",
@@ -1650,7 +1650,7 @@
     "fees": { "tuition": 155000, "hostel": 40000 }
   },
   {
-    "id": "bjmc-pune",
+    "id": "bjmc-pune-alt",
     "name": "B. J. Medical College",
     "state": "Maharashtra",
     "city": "Pune",
@@ -1663,7 +1663,7 @@
     "fees": { "tuition": 125000, "hostel": 5000 }
   },
   {
-    "id": "gmc-nagpur",
+    "id": "gmc-nagpur-alt",
     "name": "Government Medical College",
     "state": "Maharashtra",
     "city": "Nagpur",
@@ -1676,7 +1676,7 @@
     "fees": { "tuition": 115000, "hostel": 4500 }
   },
   {
-    "id": "gmc-aurangabad",
+    "id": "gmc-aurangabad-alt",
     "name": "Government Medical College",
     "state": "Maharashtra",
     "city": "Aurangabad",
@@ -2271,7 +2271,7 @@
     "fees": { "tuition": 150000, "hostel": 50000 }
   },
   {
-    "id": "gov-pharma-amravati",
+    "id": "gov-pharma-amravati-alt",
     "name": "Government College of Pharmacy",
     "state": "Maharashtra",
     "city": "Amravati",
@@ -2285,7 +2285,7 @@
     "fees": { "tuition": 30000, "hostel": 1500 }
   },
   {
-    "id": "gov-pharma-ratnagiri",
+    "id": "gov-pharma-ratnagiri-alt",
     "name": "Government College of Pharmacy",
     "state": "Maharashtra",
     "city": "Ratnagiri",
@@ -2366,7 +2366,7 @@
     "fees": { "tuition": 85000, "hostel": 25000 }
   },
   {
-    "id": "walchand-sangli",
+    "id": "walchand-sangli-ext",
     "name": "Walchand College of Engineering",
     "state": "Maharashtra",
     "city": "Sangli",
@@ -2408,7 +2408,7 @@
     "fees": { "tuition": 105000, "hostel": 35000 }
   },
   {
-    "id": "hk-pharma-mumbai",
+    "id": "hk-pharma-mumbai-alt",
     "name": "H.K. College of Pharmacy",
     "state": "Maharashtra",
     "city": "Jogeshwari (Mumbai)",
@@ -2422,7 +2422,7 @@
     "fees": { "tuition": 125000, "hostel": 45000 }
   },
   {
-    "id": "oriental-pharma-navi-mumbai",
+    "id": "oriental-pharma-navi-mumbai-alt",
     "name": "Oriental College of Pharmacy",
     "state": "Maharashtra",
     "city": "Sanpada (Navi Mumbai)",
@@ -2448,5 +2448,327 @@
     "cutoffRank": { "General": 94.0, "OBC": 92.0, "SC": 84.0, "ST": 65.0, "EWS": 93.8 },
     "link": "https://dlhcop.edu.in/",
     "fees": { "tuition": 145000, "hostel": 45000 }
+  },
+  {
+    "id": "nit-srinagar",
+    "name": "NIT Srinagar",
+    "state": "Jammu and Kashmir",
+    "city": "Srinagar",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "NITS20",
+    "cutoffRank": { "General": 48000, "OBC": 55000, "SC": 75000, "ST": 95000, "EWS": 50000 },
+    "link": "https://www.nitsri.ac.in/",
+    "fees": { "tuition": 135000, "hostel": 25000 }
+  },
+  {
+    "id": "iiit-manipur",
+    "name": "IIIT Manipur",
+    "state": "Manipur",
+    "city": "Imphal",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "IIITM21",
+    "cutoffRank": { "General": 55000, "OBC": 62000, "SC": 85000, "ST": 105000, "EWS": 58000 },
+    "link": "http://www.iiitmanipur.ac.in/",
+    "fees": { "tuition": 220000, "hostel": 45000 }
+  },
+  {
+    "id": "assam-university",
+    "name": "Assam University, Silchar",
+    "state": "Assam",
+    "city": "Silchar",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "AU01",
+    "cutoffRank": { "General": 65000, "OBC": 75000, "SC": 95000, "ST": 120000, "EWS": 68000 },
+    "link": "http://www.aus.ac.in/",
+    "fees": { "tuition": 65000, "hostel": 15000 }
+  },
+  {
+    "id": "mizoram-university",
+    "name": "Mizoram University, Aizawl",
+    "state": "Mizoram",
+    "city": "Aizawl",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "MZU01",
+    "cutoffRank": { "General": 75000, "OBC": 85000, "SC": 110000, "ST": 140000, "EWS": 78000 },
+    "link": "https://mzu.edu.in/",
+    "fees": { "tuition": 45000, "hostel": 12000 }
+  },
+  {
+    "id": "nit-trichy",
+    "name": "NIT Tiruchirappalli",
+    "state": "Tamil Nadu",
+    "city": "Tiruchirappalli",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "NITT01",
+    "cutoffRank": { "General": 25000, "OBC": 30000, "SC": 50000, "ST": 75000, "EWS": 28000 },
+    "link": "https://www.nitt.edu/",
+    "fees": { "tuition": 125000, "hostel": 30000 }
+  },
+  {
+    "id": "nit-surathkal",
+    "name": "NIT Surathkal",
+    "state": "Karnataka",
+    "city": "Surathkal",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "NITS02",
+    "cutoffRank": { "General": 28000, "OBC": 35000, "SC": 55000, "ST": 80000, "EWS": 30000 },
+    "link": "https://www.nitk.ac.in/",
+    "fees": { "tuition": 130000, "hostel": 28000 }
+  },
+  {
+    "id": "nit-warangal",
+    "name": "NIT Warangal",
+    "state": "Telangana",
+    "city": "Warangal",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "NITW03",
+    "cutoffRank": { "General": 30000, "OBC": 38000, "SC": 60000, "ST": 85000, "EWS": 32000 },
+    "link": "https://www.nitw.ac.in/",
+    "fees": { "tuition": 128000, "hostel": 25000 }
+  },
+  {
+    "id": "nit-rourkela",
+    "name": "NIT Rourkela",
+    "state": "Odisha",
+    "city": "Rourkela",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "NITR04",
+    "cutoffRank": { "General": 35000, "OBC": 42000, "SC": 65000, "ST": 90000, "EWS": 38000 },
+    "link": "https://www.nitrkl.ac.in/",
+    "fees": { "tuition": 125000, "hostel": 22000 }
+  },
+  {
+    "id": "nit-jaipur",
+    "name": "MNIT Jaipur",
+    "state": "Rajasthan",
+    "city": "Jaipur",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "MNITJ05",
+    "cutoffRank": { "General": 38000, "OBC": 45000, "SC": 70000, "ST": 95000, "EWS": 42000 },
+    "link": "https://www.mnit.ac.in/",
+    "fees": { "tuition": 125000, "hostel": 20000 }
+  },
+  {
+    "id": "nit-nagpur",
+    "name": "VNIT Nagpur",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "VNITN06",
+    "cutoffRank": { "General": 40000, "OBC": 48000, "SC": 75000, "ST": 100000, "EWS": 45000 },
+    "link": "https://www.vnit.ac.in/",
+    "fees": { "tuition": 135000, "hostel": 35000 }
+  },
+  {
+    "id": "nit-durgapur",
+    "name": "NIT Durgapur",
+    "state": "West Bengal",
+    "city": "Durgapur",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "NITD07",
+    "cutoffRank": { "General": 45000, "OBC": 52000, "SC": 80000, "ST": 110000, "EWS": 48000 },
+    "link": "https://nitdgp.ac.in/",
+    "fees": { "tuition": 125000, "hostel": 18000 }
+  },
+  {
+    "id": "nit-jamshedpur",
+    "name": "NIT Jamshedpur",
+    "state": "Jharkhand",
+    "city": "Jamshedpur",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "NITJ08",
+    "cutoffRank": { "General": 48000, "OBC": 55000, "SC": 85000, "ST": 115000, "EWS": 50000 },
+    "link": "https://nitjsr.ac.in/",
+    "fees": { "tuition": 125000, "hostel": 20000 }
+  },
+  {
+    "id": "nit-kurukshetra",
+    "name": "NIT Kurukshetra",
+    "state": "Haryana",
+    "city": "Kurukshetra",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "NITK09",
+    "cutoffRank": { "General": 42000, "OBC": 50000, "SC": 78000, "ST": 105000, "EWS": 44000 },
+    "link": "https://nitkkr.ac.in/",
+    "fees": { "tuition": 125000, "hostel": 25000 }
+  },
+  {
+    "id": "nit-silchar",
+    "name": "NIT Silchar",
+    "state": "Assam",
+    "city": "Silchar",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "NITS10",
+    "cutoffRank": { "General": 55000, "OBC": 65000, "SC": 90000, "ST": 125000, "EWS": 60000 },
+    "link": "http://www.nits.ac.in/",
+    "fees": { "tuition": 125000, "hostel": 15000 }
+  },
+  {
+    "id": "iiit-allahabad",
+    "name": "IIIT Allahabad",
+    "state": "Uttar Pradesh",
+    "city": "Allahabad",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "IIITA01",
+    "cutoffRank": { "General": 15000, "OBC": 20000, "SC": 35000, "ST": 50000, "EWS": 18000 },
+    "link": "https://www.iiita.ac.in/",
+    "fees": { "tuition": 180000, "hostel": 40000 }
+  },
+  {
+    "id": "iiit-gwalior",
+    "name": "IIITM Gwalior",
+    "state": "Madhya Pradesh",
+    "city": "Gwalior",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "IIITMG02",
+    "cutoffRank": { "General": 20000, "OBC": 25000, "SC": 40000, "ST": 60000, "EWS": 22000 },
+    "link": "https://www.iiitm.ac.in/",
+    "fees": { "tuition": 160000, "hostel": 35000 }
+  },
+  {
+    "id": "iiit-jabalpur",
+    "name": "IIITDM Jabalpur",
+    "state": "Madhya Pradesh",
+    "city": "Jabalpur",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "IIITDMJ03",
+    "cutoffRank": { "General": 35000, "OBC": 45000, "SC": 65000, "ST": 85000, "EWS": 38000 },
+    "link": "https://www.iiitdmj.ac.in/",
+    "fees": { "tuition": 150000, "hostel": 30000 }
+  },
+  {
+    "id": "iiit-kancheepuram",
+    "name": "IIITDM Kancheepuram",
+    "state": "Tamil Nadu",
+    "city": "Kancheepuram",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "IIITDMK04",
+    "cutoffRank": { "General": 45000, "OBC": 55000, "SC": 75000, "ST": 95000, "EWS": 48000 },
+    "link": "https://www.iiitdm.ac.in/",
+    "fees": { "tuition": 150000, "hostel": 45000 }
+  },
+  {
+    "id": "iiit-vadodara",
+    "name": "IIIT Vadodara",
+    "state": "Gujarat",
+    "city": "Vadodara",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "IIITV05",
+    "cutoffRank": { "General": 30000, "OBC": 40000, "SC": 60000, "ST": 80000, "EWS": 35000 },
+    "link": "http://iiitvadodara.ac.in/",
+    "fees": { "tuition": 200000, "hostel": 50000 }
+  },
+  {
+    "id": "iiit-guwahati",
+    "name": "IIIT Guwahati",
+    "state": "Assam",
+    "city": "Guwahati",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "IIITG06",
+    "cutoffRank": { "General": 40000, "OBC": 50000, "SC": 70000, "ST": 90000, "EWS": 45000 },
+    "link": "http://www.iiitg.ac.in/",
+    "fees": { "tuition": 220000, "hostel": 40000 }
+  },
+  {
+    "id": "iiit-lucknow",
+    "name": "IIIT Lucknow",
+    "state": "Uttar Pradesh",
+    "city": "Lucknow",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "IIITL07",
+    "cutoffRank": { "General": 18000, "OBC": 24000, "SC": 45000, "ST": 65000, "EWS": 20000 },
+    "link": "https://iiitl.ac.in/",
+    "fees": { "tuition": 240000, "hostel": 45000 }
+  },
+  {
+    "id": "svnit-surat",
+    "name": "SVNIT Surat",
+    "state": "Gujarat",
+    "city": "Surat",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "SVNIT01",
+    "cutoffRank": { "General": 32000, "OBC": 40000, "SC": 65000, "ST": 90000, "EWS": 35000 },
+    "link": "https://www.svnit.ac.in/",
+    "fees": { "tuition": 130000, "hostel": 25000 }
+  },
+  {
+    "id": "nit-calicut",
+    "name": "NIT Calicut",
+    "state": "Kerala",
+    "city": "Calicut",
+    "examType": "JEE",
+    "type": "Engineering",
+    "quota": "All India Quota",
+    "ownership": "Government",
+    "choiceCode": "NITC01",
+    "cutoffRank": { "General": 22000, "OBC": 28000, "SC": 45000, "ST": 65000, "EWS": 24000 },
+    "link": "https://www.nitc.ac.in/",
+    "fees": { "tuition": 135000, "hostel": 30000 }
   }
 ]

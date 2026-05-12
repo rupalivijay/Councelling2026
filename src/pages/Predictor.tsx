@@ -236,11 +236,8 @@ export default function Predictor() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userProfile?.isPaid && userProfile?.role !== 'counselor') {
-      // The UI already shows the restriction card, so we don't need a redundant alert
-      // We can also redirect them to a pricing page or scroll them to the card
-      const card = document.getElementById('premium-card');
-      card?.scrollIntoView({ behavior: 'smooth' });
+    if (!auth.currentUser) {
+      alert("Please sign in to use the predictor engine.");
       return;
     }
     
@@ -309,6 +306,11 @@ export default function Predictor() {
       return typeMatch && quotaMatch && ownershipMatch && stateMatch;
     });
   }, [results, filterType, filterQuota, filterOwnership, filterState]);
+
+  const availableStates = React.useMemo(() => {
+    const statesSet = new Set(results.map(c => c.state));
+    return ['All', ...Array.from(statesSet).sort()];
+  }, [results]);
 
   const handleShare = (college: College) => {
     const text = `Check out ${college.name} in ${college.city}, ${college.state}. Predicted for my rank by Laxmi Educational Predictor!`;
@@ -384,9 +386,9 @@ export default function Predictor() {
           Get precise recommendations based on historical cutoff data for NEET, JEE, and CET. Our smart engine analyzes AIQ and State quota rankings.
         </p>
 
-        {(!userProfile?.isPaid && userProfile?.role !== 'counselor') && (
+        {!auth.currentUser && (
           <motion.div 
-            id="premium-card"
+            id="login-card"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-8 bg-blue-600 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-blue-200 flex flex-col items-center gap-6 relative overflow-hidden"
@@ -400,32 +402,21 @@ export default function Predictor() {
             </div>
             
             <div className="text-center space-y-4 max-w-lg z-10">
-              <h2 className="text-3xl font-black italic">Premium Access Only</h2>
+              <h2 className="text-3xl font-black italic">Sign In Required</h2>
               <p className="text-blue-100 font-medium">
-                The predictor engine uses real-time historical data analysis which is exclusive to our paid students. Get your personalized credentials today!
+                Please sign in to access the predictor engine and get personalized recommendations based on your rank.
               </p>
             </div>
 
             <div className="flex flex-wrap justify-center gap-4 z-10">
               <Link 
-                to="/pricing"
+                to="/auth"
                 className="bg-white text-blue-600 px-8 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-blue-50 transition"
               >
-                View Unlock Plans
+                Sign In Now
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <a 
-                href="https://wa.me/91XXXXXXXXXX" 
-                target="_blank" 
-                className="bg-transparent border-2 border-white/30 text-white px-8 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-white/10 transition"
-              >
-                Contact via WhatsApp
-              </a>
             </div>
-            
-            {!auth.currentUser && (
-               <p className="text-blue-200 text-sm font-bold mt-2">Already have access? <Link to="/auth" className="text-white underline">Sign In Now</Link></p>
-            )}
           </motion.div>
         )}
 
@@ -504,6 +495,9 @@ export default function Predictor() {
                   </button>
                 ))}
               </div>
+              <p className="text-[10px] text-slate-400 ml-1 italic mt-1">
+                Tip: 'State Quota' search also includes all eligible 'All India Quota' institutions.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -744,88 +738,130 @@ export default function Predictor() {
           </div>
 
           <div className="space-y-6">
-            <div className="flex flex-col space-y-2">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Filter Results by Category & Region</h3>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-xl w-fit">
-                  {[2026, 2025, 2024, 2023].map((y) => (
-                    <button
-                      key={y}
-                      onClick={() => setFilterYear(y)}
-                      className={cn(
-                        "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition",
-                        filterYear === y ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                      )}
-                    >
-                      {y}
-                    </button>
-                  ))}
+            <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-6 mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-100">
+                    <Filter className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 leading-tight uppercase tracking-tight">Active Result Filters</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{filteredResults.length} Matching Predictors</p>
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => {
+                    setFilterType('All');
+                    setFilterState('All');
+                    setFilterQuota('All');
+                    setFilterOwnership('All');
+                    setFilterYear(2026);
+                  }}
+                  className="text-[10px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 uppercase tracking-widest bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 transition active:scale-95"
+                >
+                  <X className="h-3 w-3" />
+                  Clear All Filters
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Type Filter */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Institution Type</label>
+                  <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+                    {(['All', 'Medical', 'Engineering', 'Pharmacy'] as const).map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setFilterType(type)}
+                        className={cn(
+                          "flex-1 px-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition",
+                          filterType === type ? "bg-blue-600 text-white shadow-md" : "text-slate-500 hover:text-slate-700"
+                        )}
+                      >
+                        {type === 'Engineering' ? 'Eng.' : type === 'Pharmacy' ? 'Phar.' : type}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-xl w-fit">
-                  <button
-                    onClick={() => setFilterState('All')}
-                    className={cn(
-                      "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition",
-                      filterState === 'All' ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                    )}
+                {/* State Filter */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Location / State</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+                    <select
+                      value={filterState}
+                      onChange={(e) => setFilterState(e.target.value)}
+                      className="w-full pl-8 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-tight focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none shadow-sm cursor-pointer"
+                    >
+                      {availableStates.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ) )}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Quota Filter */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Admission Quota</label>
+                  <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+                    {(['All', QuotaType.AIQ, QuotaType.STATE] as const).map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => setFilterQuota(q)}
+                        className={cn(
+                          "flex-1 px-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight transition",
+                          filterQuota === q ? "bg-orange-600 text-white shadow-md" : "text-slate-500 hover:text-slate-700"
+                        )}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Ownership Filter */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Ownership Model</label>
+                  <select
+                    value={filterOwnership}
+                    onChange={(e) => setFilterOwnership(e.target.value as any)}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-tight focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none shadow-sm cursor-pointer"
                   >
-                    All States
-                  </button>
-                  <button
-                    onClick={() => setFilterState('Maharashtra')}
-                    className={cn(
-                      "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition",
-                      filterState === 'Maharashtra' ? "bg-red-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"
-                    )}
-                  >
-                    Maharashtra
-                  </button>
+                    {['All', 'Government', 'Private', 'Aided', 'Deemed'].map(o => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
                 </div>
+              </div>
 
-                <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-xl w-fit">
-                  {(['All', 'Medical', 'Engineering', 'Pharmacy'] as const).map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setFilterType(type)}
-                      className={cn(
-                        "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition",
-                        filterType === type ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                      )}
-                    >
-                      {type}
-                    </button>
-                  ))}
+              <div className="mt-6 flex flex-wrap items-center gap-4 pt-6 border-t border-slate-200/60">
+                <div className="flex items-center gap-3">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Data Year:</span>
+                  <div className="flex items-center space-x-1.5">
+                    {[2026, 2025, 2024, 2023].map((y) => (
+                      <button
+                        key={y}
+                        onClick={() => setFilterYear(y)}
+                        className={cn(
+                          "px-3 py-1 rounded-md text-[10px] font-black transition-all",
+                          filterYear === y 
+                            ? "bg-slate-900 text-white shadow-lg" 
+                            : "bg-white text-slate-500 hover:bg-slate-100 border border-slate-100"
+                        )}
+                      >
+                        {y}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+                
+                <div className="flex-1" />
 
-                <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-xl w-fit">
-                  {(['All', QuotaType.AIQ, QuotaType.STATE] as const).map((q) => (
-                    <button
-                      key={q}
-                      onClick={() => setFilterQuota(q)}
-                      className={cn(
-                        "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition",
-                        filterQuota === q ? "bg-white text-orange-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                      )}
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center space-x-2 bg-slate-100 p-1 rounded-xl w-fit">
-                  {(['All', 'Government', 'Private', 'Aided', 'Deemed'] as const).map((o) => (
-                    <button
-                      key={o}
-                      onClick={() => setFilterOwnership(o)}
-                      className={cn(
-                        "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition",
-                        filterOwnership === o ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                      )}
-                    >
-                      {o}
-                    </button>
-                  ))}
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-100">
+                  <Sparkles className="h-3 w-3 text-blue-600" />
+                  <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Historical Data Sync Active</span>
                 </div>
               </div>
             </div>

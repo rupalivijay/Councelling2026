@@ -19,6 +19,7 @@ export default function CounselorDashboard() {
   const [appointments, setAppointments] = React.useState<any[]>([]);
   const [leads, setLeads] = React.useState<any[]>([]);
   const [chatUsers, setChatUsers] = React.useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   React.useEffect(() => {
     let unsubChats: (() => void) | null = null;
@@ -27,7 +28,9 @@ export default function CounselorDashboard() {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const counselorDoc = await getDoc(doc(db, 'counselors', user.uid));
-        if (counselorDoc.exists()) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        
+        if (counselorDoc.exists() || (userDoc.exists() && userDoc.data()?.role === 'counselor')) {
           setIsCounselor(true);
           fetchStudents();
           fetchAppointments();
@@ -433,6 +436,16 @@ export default function CounselorDashboard() {
           </div>
         ) : activeTab === 'students' ? (
           <div className="grid gap-6">
+            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-4">
+                <Users className="h-6 w-6 text-slate-400" />
+                <input 
+                    type="text" 
+                    placeholder="Search students by name, email or phone..." 
+                    className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl py-3 px-6 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
             {allUsers.length === 0 ? (
                 <div className="text-center py-20 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
                     <Users className="h-12 w-12 text-slate-300 mx-auto mb-4" />
@@ -449,7 +462,14 @@ export default function CounselorDashboard() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {allUsers.map((user) => (
+                            {allUsers
+                                .filter(user => 
+                                    (user.displayName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    (user.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    (user.phone || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                    (user.domicile || "").toLowerCase().includes(searchQuery.toLowerCase())
+                                )
+                                .map((user) => (
                                 <tr key={user.id} className="hover:bg-slate-50/50 transition">
                                     <td className="px-8 py-6">
                                         <div className="flex items-center space-x-4">
