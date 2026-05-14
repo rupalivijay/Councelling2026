@@ -3,7 +3,8 @@ export enum Category {
   OBC = "OBC",
   SC = "SC",
   ST = "ST",
-  EWS = "EWS"
+  EWS = "EWS",
+  VJ_DT_NT = "VJ/DT/NT"
 }
 
 export enum ExamType {
@@ -59,6 +60,7 @@ export interface College {
   choiceCode?: string;
   link: string;
   type: "Medical" | "Engineering" | "Pharmacy";
+  branch?: string;
   quota: QuotaType;
   ownership?: "Government" | "Private" | "Aided" | "Deemed";
   fees: {

@@ -1,15 +1,47 @@
 import React from 'react';
-import { motion } from 'motion/react';
-import { Target, Users, BookOpen, MessageSquare, Video, ShieldCheck, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Target, Users, BookOpen, MessageSquare, Video, ShieldCheck, X, Search, MapPin, Building, GraduationCap, ArrowRight, ExternalLink } from 'lucide-react';
 import { db, auth } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+import { College } from '../types';
+import { cn } from '../lib/utils';
 
 export default function Institute() {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [bookingStatus, setBookingStatus] = React.useState<'idle' | 'success' | 'error'>('idle');
   const [currentUser, setCurrentUser] = React.useState<any>(null);
+  const [allColleges, setAllColleges] = React.useState<College[]>([]);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [isLoadingColleges, setIsLoadingColleges] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchColleges = async () => {
+      try {
+        const response = await fetch('/api/colleges');
+        if (response.ok) {
+          const data = await response.json();
+          setAllColleges(data);
+        }
+      } catch (err) {
+        console.error("Error fetching colleges:", err);
+      } finally {
+        setIsLoadingColleges(false);
+      }
+    };
+    fetchColleges();
+  }, []);
+
+  const filteredColleges = React.useMemo(() => {
+    if (!searchQuery.trim()) return allColleges.slice(0, 100); // Show first 100 by default
+    const query = searchQuery.toLowerCase();
+    return allColleges.filter(c => 
+      c.name.toLowerCase().includes(query) || 
+      c.city.toLowerCase().includes(query) ||
+      c.state.toLowerCase().includes(query)
+    ).slice(0, 100); // Limit results for performance
+  }, [allColleges, searchQuery]);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -91,7 +123,7 @@ export default function Institute() {
         </div>
       </div>
 
-      <section className="bg-slate-900 rounded-[4rem] p-12 lg:p-20 text-white">
+      <section className="bg-slate-900 rounded-[4rem] p-12 lg:p-20 text-white mb-20">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-black mb-4 tracking-tight">Our Specialized Services</h2>
           <p className="text-slate-400">Comprehensive support for every stage of your admission journey.</p>
@@ -102,6 +134,108 @@ export default function Institute() {
           <ConsultingStep icon={BookOpen} title="State Round Prep" />
           <ConsultingStep icon={ShieldCheck} title="Admission Support" />
         </div>
+      </section>
+
+      {/* College Directory Section */}
+      <section id="directory" className="mb-20">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+          <div>
+            <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Institute Directory</h2>
+            <p className="text-slate-600 font-medium">Explore over 2,500+ premier medical and engineering colleges.</p>
+          </div>
+          
+          <div className="relative w-full md:w-96 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+            <input 
+              type="text"
+              placeholder="Search by name or city..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-900 shadow-sm"
+            />
+          </div>
+        </div>
+
+        {isLoadingColleges ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="h-64 bg-slate-100 rounded-[2rem] animate-pulse" />
+            ))}
+          </div>
+        ) : filteredColleges.length > 0 ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AnimatePresence mode="popLayout">
+              {filteredColleges.map((college) => (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  key={college.id}
+                  className="group bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="p-3 bg-blue-50 rounded-2xl group-hover:bg-blue-600 transition-colors">
+                        <Building className="h-6 w-6 text-blue-600 group-hover:text-white transition-colors" />
+                      </div>
+                      <span className={cn(
+                        "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
+                        college.type === 'Medical' ? "bg-red-50 text-red-600" : "bg-teal-50 text-teal-600"
+                      )}>
+                        {college.type}
+                      </span>
+                    </div>
+                    
+                    <h3 className="text-xl font-black text-slate-900 mb-2 leading-tight flex items-start gap-2">
+                      {college.name}
+                    </h3>
+                    
+                    <div className="space-y-2 mb-6">
+                      <div className="flex items-center text-slate-500 text-sm font-bold">
+                        <MapPin className="h-4 w-4 mr-2 text-slate-400" />
+                        {college.city}, {college.state}
+                      </div>
+                      <div className="flex items-center text-slate-500 text-sm font-bold">
+                        <GraduationCap className="h-4 w-4 mr-2 text-slate-400" />
+                        {college.examType}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                    <div className="text-xs font-bold text-slate-400">
+                      Code: <span className="text-slate-900">{college.choiceCode}</span>
+                    </div>
+                    <a 
+                      href={college.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-700 font-black text-xs uppercase tracking-widest flex items-center gap-1"
+                    >
+                      Website
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <div className="bg-slate-50 rounded-[3rem] p-20 text-center">
+            <div className="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Search className="h-10 w-10 text-slate-400" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 mb-2">No Institutes Found</h3>
+            <p className="text-slate-500 font-medium">Try adjusting your search query to find the college you're looking for.</p>
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="mt-8 text-blue-600 font-black uppercase tracking-widest text-xs flex items-center gap-2 mx-auto"
+            >
+              Clear Search <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Booking Modal */}
@@ -197,8 +331,4 @@ function ConsultingStep({ icon: Icon, title }: { icon: any, title: string }) {
       <h5 className="font-bold text-lg">{title}</h5>
     </div>
   );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
 }

@@ -196,7 +196,7 @@ export default function StudentDashboard() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
+                            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Admission Category</label>
                             <select 
                                 value={editProfile.category}
                                 onChange={(e) => setEditProfile({...editProfile, category: e.target.value})}

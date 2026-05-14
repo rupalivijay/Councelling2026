@@ -29,6 +29,7 @@ export default function Predictor() {
   const [hasSearched, setHasSearched] = React.useState(false);
   const [filterType, setFilterType] = React.useState<'All' | 'Medical' | 'Engineering' | 'Pharmacy'>('All');
   const [filterState, setFilterState] = React.useState<string>('All');
+  const [filterBranch, setFilterBranch] = React.useState<string>('All Branches');
   const [filterYear, setFilterYear] = React.useState<number>(2026);
   const [filterQuota, setFilterQuota] = React.useState<'All' | QuotaType>('All');
   const [filterOwnership, setFilterOwnership] = React.useState<'All' | 'Government' | 'Private' | 'Aided' | 'Deemed'>('All');
@@ -60,12 +61,14 @@ export default function Predictor() {
       [Category.OBC]: 0,
       [Category.SC]: 0,
       [Category.ST]: 0,
-      [Category.EWS]: 0
+      [Category.EWS]: 0,
+      [Category.VJ_DT_NT]: 0
     },
     choiceCode: '',
     link: '',
     fees: { tuition: 0, hostel: 0 },
-    description: ''
+    description: '',
+    branch: ''
   });
 
   const [testimonialFormData, setTestimonialFormData] = React.useState({
@@ -118,8 +121,8 @@ export default function Predictor() {
         setAdminFormData({
            id: '', name: '', state: 'Maharashtra', city: '', examType: ExamType.NEET, type: 'Medical', quota: QuotaType.AIQ,
            ownership: 'Government',
-           cutoffRank: { [Category.GENERAL]: 0, [Category.OBC]: 0, [Category.SC]: 0, [Category.ST]: 0, [Category.EWS]: 0 },
-           choiceCode: '', link: '', fees: { tuition: 0, hostel: 0 }, description: ''
+           cutoffRank: { [Category.GENERAL]: 0, [Category.OBC]: 0, [Category.SC]: 0, [Category.ST]: 0, [Category.EWS]: 0, [Category.VJ_DT_NT]: 0 },
+           choiceCode: '', link: '', fees: { tuition: 0, hostel: 0 }, description: '', branch: ''
         });
       } else {
         alert("Failed to add college.");
@@ -303,14 +306,23 @@ export default function Predictor() {
       const quotaMatch = filterQuota === 'All' || c.quota === filterQuota;
       const stateMatch = filterState === 'All' || c.state === filterState;
       const ownershipMatch = filterOwnership === 'All' || c.ownership === filterOwnership;
-      return typeMatch && quotaMatch && ownershipMatch && stateMatch;
+      const branchMatch = filterBranch === 'All Branches' || c.branch === filterBranch;
+      return typeMatch && quotaMatch && ownershipMatch && stateMatch && branchMatch;
     });
-  }, [results, filterType, filterQuota, filterOwnership, filterState]);
+  }, [results, filterType, filterQuota, filterOwnership, filterState, filterBranch]);
 
   const availableStates = React.useMemo(() => {
     const statesSet = new Set(results.map(c => c.state));
     return ['All', ...Array.from(statesSet).sort()];
   }, [results]);
+
+  const availableBranches = React.useMemo(() => {
+    // Collect branches from all colleges to populate the list even before search
+    const sourceColleges = allColleges.length > 0 ? allColleges : [];
+    const branchesSet = new Set(sourceColleges.filter(c => c.branch).map(c => c.branch as string));
+    const sortedBranches = Array.from(branchesSet).sort();
+    return ['All Branches', ...sortedBranches];
+  }, [allColleges]);
 
   const handleShare = (college: College) => {
     const text = `Check out ${college.name} in ${college.city}, ${college.state}. Predicted for my rank by Laxmi Educational Predictor!`;
@@ -365,6 +377,8 @@ export default function Predictor() {
       'SC Cutoff': c.cutoffRank?.[Category.SC] || 'N/A',
       'ST Cutoff': c.cutoffRank?.[Category.ST] || 'N/A',
       'EWS Cutoff': c.cutoffRank?.[Category.EWS] || 'N/A',
+      'VJ/DT/NT Cutoff': c.cutoffRank?.[Category.VJ_DT_NT] || 'N/A',
+      'Branch': c.branch || 'N/A',
       'Tuition Fee': c.fees?.tuition || 0,
       'Hostel Fee': c.fees?.hostel || 0,
       'Website Link': c.link
@@ -464,6 +478,7 @@ export default function Predictor() {
                         ? QuotaType.STATE 
                         : formData.quota;
                       setFormData({ ...formData, examType: exam, quota: newQuota });
+                      setFilterBranch('All Branches');
                     }}
                     className={cn(
                       "py-3 px-4 rounded-lg text-sm font-bold transition-all",
@@ -532,7 +547,7 @@ export default function Predictor() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700 ml-1">Category</label>
+              <label className="text-sm font-semibold text-slate-700 ml-1">Admission Category</label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value as Category })}
@@ -557,7 +572,28 @@ export default function Predictor() {
               </select>
             </div>
 
-            <div className="flex items-end">
+            {(formData.examType === ExamType.JEE || formData.examType === ExamType.CET_PCM) && (
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700 ml-1">Preferred Branch</label>
+                <div className="relative">
+                  <Award className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                  <select
+                    value={filterBranch}
+                    onChange={(e) => setFilterBranch(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition appearance-none cursor-pointer font-bold"
+                  >
+                    {availableBranches.map((branch) => (
+                      <option key={branch} value={branch}>{branch}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            <div className={cn(
+              "flex items-end",
+              (formData.examType !== ExamType.JEE && formData.examType !== ExamType.CET_PCM) && "md:col-span-2 md:w-1/2 md:ml-auto"
+            )}>
               <button
                 type="submit"
                 disabled={loading}
@@ -617,7 +653,7 @@ export default function Predictor() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Category</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Admission Category</label>
               <select 
                 value={quickMatchData.category}
                 onChange={(e) => {
@@ -754,6 +790,7 @@ export default function Predictor() {
                   onClick={() => {
                     setFilterType('All');
                     setFilterState('All');
+                    setFilterBranch('All Branches');
                     setFilterQuota('All');
                     setFilterOwnership('All');
                     setFilterYear(2026);
@@ -765,7 +802,28 @@ export default function Predictor() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Admission Category Filter */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Admission Category</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => {
+                      const newCat = e.target.value as Category;
+                      setFormData(prev => ({ ...prev, category: newCat }));
+                      if (hasSearched) {
+                        const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+                        handleSubmit(fakeEvent);
+                      }
+                    }}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-tight focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none shadow-sm cursor-pointer"
+                  >
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Type Filter */}
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Institution Type</label>
@@ -834,6 +892,25 @@ export default function Predictor() {
                     ))}
                   </select>
                 </div>
+
+                {/* Branch Filter - Only for Engineering */}
+                {(formData.examType === ExamType.JEE || formData.examType === ExamType.CET_PCM || filterType === 'Engineering') && (
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Specialization / Branch</label>
+                    <div className="relative">
+                      <Award className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 pointer-events-none" />
+                      <select
+                        value={filterBranch}
+                        onChange={(e) => setFilterBranch(e.target.value)}
+                        className="w-full pl-8 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black uppercase tracking-tight focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none shadow-sm cursor-pointer"
+                      >
+                        {availableBranches.map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex flex-wrap items-center gap-4 pt-6 border-t border-slate-200/60">
@@ -927,6 +1004,12 @@ export default function Predictor() {
                         {college.nirfRanking && (
                           <span className="inline-flex items-center bg-orange-50 text-orange-600 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest border border-orange-100">
                             NIRF #{college.nirfRanking}
+                          </span>
+                        )}
+                        {college.branch && (
+                          <span className="inline-flex items-center bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm">
+                            <Award className="h-3 w-3 mr-1" />
+                            {college.branch}
                           </span>
                         )}
                       </div>
@@ -1260,11 +1343,28 @@ export default function Predictor() {
                       </select>
                     </div>
                     <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400">Institution Type</label>
+                      <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.type} onChange={e => setAdminFormData({...adminFormData, type: e.target.value as any})}>
+                        {['Medical', 'Engineering', 'Pharmacy'].map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
                       <label className="text-[10px] font-black uppercase text-slate-400">Ownership</label>
                       <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.ownership} onChange={e => setAdminFormData({...adminFormData, ownership: e.target.value as any})}>
                         {['Government', 'Private', 'Aided', 'Deemed'].map(o => <option key={o} value={o}>{o}</option>)}
                       </select>
                     </div>
+                    {(adminFormData.type === 'Engineering' || adminFormData.examType === ExamType.JEE || adminFormData.examType === ExamType.CET_PCM) && (
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase text-slate-400">Engineering Branch</label>
+                        <input 
+                          className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" 
+                          placeholder="e.g. Computer Engineering" 
+                          value={adminFormData.branch} 
+                          onChange={e => setAdminFormData({...adminFormData, branch: e.target.value})} 
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-4 bg-slate-50 rounded-2xl space-y-3">
