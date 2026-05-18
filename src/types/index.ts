@@ -63,7 +63,7 @@ export interface College {
   branch?: string;
   quota: QuotaType;
   ownership?: "Government" | "Private" | "Aided" | "Deemed";
-  fees: {
+  fees?: {
     tuition: number;
     hostel: number;
   };
@@ -72,6 +72,8 @@ export interface College {
   historicalTrends?: {
     [key in Category]?: HistoricalData[];
   };
+  predictionChance?: "Excellent" | "Safe" | "Moderate" | "Risky";
+  cutoffUsed?: number;
 }
 
 export interface PredictionRequest {

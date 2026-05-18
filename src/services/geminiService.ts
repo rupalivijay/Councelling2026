@@ -9,29 +9,39 @@ export async function getAIInsights(
   examType: ExamType,
   results: College[]
 ): Promise<string> {
-  const topColleges = results.slice(0, 5).map(c => ({
+  const topColleges = results.slice(0, 8).map(c => ({
     name: c.name,
     city: c.city,
     cutoff: c.cutoffRank[category],
-    ownership: c.ownership,
-    type: c.type
+    chance: c.predictionChance,
+    target: c.cutoffUsed,
+    type: c.type,
+    branch: c.branch
   }));
 
   const prompt = `
     You are an expert education counselor at Laxmi Education. 
     The student has a rank/percentile of ${rank} in the ${examType} exam under the ${category} category.
     
-    Here are the predicted college results based on historical data:
+    Here are the predicted college results with calculated safety levels:
     ${JSON.stringify(topColleges, null, 2)}
     
-    Provide a personalized analysis of these results. 
-    1. Evaluate the student's chances for top-tier vs. mid-tier institutions.
-    2. Offer strategic advice (e.g., choice filling, looking at specific regions like Maharashtra, or considering different branches).
-    3. Be encouraging but realistic.
-    4. Format the response in clear, professional markdown with bullet points where appropriate.
-    5. Mention that Laxmi Education can help with detailed offline guidance.
+    Provide a professional and detailed analysis:
+    1. Summary of Chances: Group results by "Excellent", "Safe", "Moderate", and "Risky".
+    2. Strategic Choice Filling Advice: 
+       - Which colleges are "Sure Shots" (Safe/Excellent)? 
+       - Which ones are "Aspirational" (Risky/Moderate)?
+       - Advice on the order of filling choices to maximize chance of top-tier admission.
+    3. State-level Insights: Consider the competitiveness of ${examType} in the current year.
+    4. Regional Recommendation: If many results are in Maharashtra, highlight the benefits.
     
-    Keep the tone professional, insightful, and supportive. Max 300 words.
+    Formatting:
+    - Use H3 headers for sections.
+    - Use bold text for college names.
+    - Use a table if it helps summarize the Tiers.
+    - Mention Laxmi Education at the end for personalized 1-on-1 counseling.
+    
+    Max 400 words. Be precise and realistic.
   `;
 
   try {
@@ -61,7 +71,6 @@ export async function getPersonalizedSuggestions(
   const contextColleges = allColleges.slice(0, 20).map(c => ({
     name: c.name,
     state: c.state,
-    fees: c.fees?.tuition,
     ownership: c.ownership,
     cutoff: c.cutoffRank[category]
   }));
@@ -69,7 +78,6 @@ export async function getPersonalizedSuggestions(
   const prompt = `
     Based on the following preferences:
     - State: ${preferences.state || 'Any'}
-    - Budget (Tuition): ${preferences.budget ? `Up to ₹${preferences.budget}` : 'Any'}
     - Ownership: ${preferences.ownership || 'Any'}
     - Exam: ${examType}
     

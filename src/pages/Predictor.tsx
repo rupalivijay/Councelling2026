@@ -66,7 +66,6 @@ export default function Predictor() {
     },
     choiceCode: '',
     link: '',
-    fees: { tuition: 0, hostel: 0 },
     description: '',
     branch: ''
   });
@@ -122,7 +121,7 @@ export default function Predictor() {
            id: '', name: '', state: 'Maharashtra', city: '', examType: ExamType.NEET, type: 'Medical', quota: QuotaType.AIQ,
            ownership: 'Government',
            cutoffRank: { [Category.GENERAL]: 0, [Category.OBC]: 0, [Category.SC]: 0, [Category.ST]: 0, [Category.EWS]: 0, [Category.VJ_DT_NT]: 0 },
-           choiceCode: '', link: '', fees: { tuition: 0, hostel: 0 }, description: '', branch: ''
+           choiceCode: '', link: '', description: '', branch: ''
         });
       } else {
         alert("Failed to add college.");
@@ -317,12 +316,20 @@ export default function Predictor() {
   }, [results]);
 
   const availableBranches = React.useMemo(() => {
-    // Collect branches from all colleges to populate the list even before search
-    const sourceColleges = allColleges.length > 0 ? allColleges : [];
+    // Collect branches from colleges matching the current context to keep the list relevant
+    let sourceColleges = allColleges;
+    if (filterType !== 'All') {
+      sourceColleges = allColleges.filter(c => c.type === filterType);
+    } else if (formData.examType === ExamType.JEE || formData.examType === ExamType.CET_PCM) {
+      sourceColleges = allColleges.filter(c => c.type === 'Engineering');
+    } else if (formData.examType === ExamType.NEET || formData.examType === ExamType.CET_PCB) {
+      sourceColleges = allColleges.filter(c => c.type === 'Medical' || c.type === 'Pharmacy');
+    }
+
     const branchesSet = new Set(sourceColleges.filter(c => c.branch).map(c => c.branch as string));
     const sortedBranches = Array.from(branchesSet).sort();
     return ['All Branches', ...sortedBranches];
-  }, [allColleges]);
+  }, [allColleges, filterType, formData.examType]);
 
   const handleShare = (college: College) => {
     const text = `Check out ${college.name} in ${college.city}, ${college.state}. Predicted for my rank by Laxmi Educational Predictor!`;
@@ -379,8 +386,6 @@ export default function Predictor() {
       'EWS Cutoff': c.cutoffRank?.[Category.EWS] || 'N/A',
       'VJ/DT/NT Cutoff': c.cutoffRank?.[Category.VJ_DT_NT] || 'N/A',
       'Branch': c.branch || 'N/A',
-      'Tuition Fee': c.fees?.tuition || 0,
-      'Hostel Fee': c.fees?.hostel || 0,
       'Website Link': c.link
     }));
 
@@ -718,6 +723,31 @@ export default function Predictor() {
             <div className="flex flex-col space-y-4 flex-1">
               <h2 className="text-3xl font-black text-slate-900 tracking-tight">Predicted Institutions</h2>
               <p className="text-slate-500 font-medium text-sm">Based on your rank and selected preferences</p>
+              
+              <div className="flex flex-wrap gap-3 mt-2">
+                {['Excellent', 'Safe', 'Moderate', 'Risky'].map(level => {
+                  const count = filteredResults.filter(c => c.predictionChance === level).length;
+                  if (count === 0) return null;
+                  return (
+                    <div key={level} className={cn(
+                      "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                      level === 'Excellent' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                      level === 'Safe' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                      level === 'Moderate' ? "bg-orange-50 text-orange-600 border-orange-100" :
+                      "bg-amber-50 text-amber-600 border-amber-100"
+                    )}>
+                      <div className={cn(
+                        "h-1.5 w-1.5 rounded-full",
+                        level === 'Excellent' ? "bg-emerald-500" :
+                        level === 'Safe' ? "bg-blue-500" :
+                        level === 'Moderate' ? "bg-orange-500" :
+                        "bg-amber-500"
+                      )} />
+                      <span>{count} {level} Matches</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             
             <button
@@ -1053,7 +1083,7 @@ export default function Predictor() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-4 gap-x-2">
                       {Object.values(Category).map((cat) => {
                         const getTrendRank = () => {
-                          if (filterYear === 2026) return college.cutoffRank[cat];
+                          if (filterYear === 2026) return college.cutoffRank?.[cat as Category];
                           const trend = college.historicalTrends?.[cat as Category]?.find(t => t.year === filterYear);
                           return trend ? trend.rank : null;
                         };
@@ -1066,7 +1096,7 @@ export default function Predictor() {
                               "text-xs font-black",
                               formData.category === cat ? "text-blue-600" : "text-slate-900"
                             )}>
-                              {displayRank ? (
+                              {displayRank != null ? (
                                 <>
                                   {displayRank.toLocaleString()}
                                   {(college.examType === ExamType.CET_PCM || college.examType === ExamType.CET_PCB) && "%"}
@@ -1079,35 +1109,35 @@ export default function Predictor() {
                     </div>
                   </div>
 
-                  <div className="pt-6 border-t border-slate-100">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Estimated Annual Fees</h4>
-                      <div className="flex items-center space-x-1 bg-amber-50 px-2 py-0.5 rounded text-[9px] font-bold text-amber-700 border border-amber-100">
-                        <Sparkles className="h-2 w-2" />
-                        <span>APPROXIMATE</span>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Tuition Fees</p>
-                        <p className="text-lg font-black text-slate-900">₹{college.fees?.tuition.toLocaleString()}</p>
-                      </div>
-                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Hostel Fees</p>
-                        <p className="text-lg font-black text-slate-900">₹{college.fees?.hostel.toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <p className="mt-4 text-[10px] text-slate-400 italic">
-                      Disclaimer: Fees mentioned above are indicative based on previous academic sessions. Actual fees may vary.
-                    </p>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4">
                     <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                        <span className="text-sm font-bold text-slate-700">Possible</span>
+                      <div className="flex flex-col">
+                        <div className="flex items-center space-x-2">
+                          {college.predictionChance === 'Excellent' && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                          {college.predictionChance === 'Safe' && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
+                          {college.predictionChance === 'Moderate' && <Sparkles className="h-4 w-4 text-orange-500" />}
+                          {college.predictionChance === 'Risky' && <TrendingUp className="h-4 w-4 text-amber-500" />}
+                          <span className={cn(
+                            "text-sm font-black italic",
+                            college.predictionChance === 'Excellent' ? "text-emerald-600" :
+                            college.predictionChance === 'Safe' ? "text-blue-600" :
+                            college.predictionChance === 'Moderate' ? "text-orange-600" :
+                            "text-amber-600"
+                          )}>
+                            Chance: {college.predictionChance}
+                          </span>
+                        </div>
+                        <div className="mt-1 w-32 h-1 bg-slate-100 rounded-full overflow-hidden">
+                          <div className={cn(
+                            "h-full transition-all duration-1000",
+                            college.predictionChance === 'Excellent' ? "w-full bg-emerald-500" :
+                            college.predictionChance === 'Safe' ? "w-3/4 bg-blue-500" :
+                            college.predictionChance === 'Moderate' ? "w-1/2 bg-orange-500" :
+                            "w-1/4 bg-amber-500"
+                          )} />
+                        </div>
                       </div>
+
                       {college.historicalTrends?.[formData.category as Category] && (
                         <button
                           onClick={() => toggleTrends(college.id)}
@@ -1121,12 +1151,19 @@ export default function Predictor() {
                         </button>
                       )}
                     </div>
-                    <span className={cn(
-                      "text-xs px-3 py-1 rounded-lg font-black uppercase tracking-widest",
-                      college.quota === QuotaType.AIQ ? "bg-orange-50 text-orange-600" : "bg-purple-50 text-purple-600"
-                    )}>
-                      {college.quota}
-                    </span>
+                    <div className="flex items-center gap-2">
+                       <span className={cn(
+                        "text-[9px] px-2 py-1 rounded bg-slate-100 text-slate-500 font-bold uppercase tracking-widest border border-slate-200"
+                       )}>
+                        {formData.category} Target: {college.cutoffUsed?.toLocaleString()}
+                       </span>
+                       <span className={cn(
+                        "text-xs px-3 py-1 rounded-lg font-black uppercase tracking-widest",
+                        college.quota === QuotaType.AIQ ? "bg-orange-50 text-orange-600" : "bg-purple-50 text-purple-600"
+                      )}>
+                        {college.quota}
+                      </span>
+                    </div>
                   </div>
 
                   <AnimatePresence>
@@ -1388,17 +1425,6 @@ export default function Predictor() {
                      </div>
                   </div>
 
-                  <div className="flex gap-4">
-                     <div className="flex-1 space-y-1">
-                        <label className="text-[10px] font-black uppercase text-slate-400">Tuition Fee</label>
-                        <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.fees.tuition} onChange={e => setAdminFormData({...adminFormData, fees: {...adminFormData.fees, tuition: parseInt(e.target.value)}})} />
-                     </div>
-                     <div className="flex-1 space-y-1">
-                        <label className="text-[10px] font-black uppercase text-slate-400">Hostel Fee</label>
-                        <input type="number" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.fees.hostel} onChange={e => setAdminFormData({...adminFormData, fees: {...adminFormData.fees, hostel: parseInt(e.target.value)}})} />
-                     </div>
-                  </div>
-
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase text-slate-400">Website Link</label>
                     <input className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" value={adminFormData.link} onChange={e => setAdminFormData({...adminFormData, link: e.target.value})} />
@@ -1583,8 +1609,8 @@ export default function Predictor() {
                                         <td className="p-6 font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50">{cat} Cutoff</td>
                                         {selectedForCompare.map(college => (
                                             <td key={college.id} className="p-6 border-b border-slate-50 font-black text-slate-900 text-base">
-                                                {college.cutoffRank[cat].toLocaleString()}
-                                                {(college.examType === ExamType.CET_PCM || college.examType === ExamType.CET_PCB) && "%"}
+                                                {college.cutoffRank?.[cat]?.toLocaleString() || 'N/A'}
+                                                {college.cutoffRank?.[cat] && (college.examType === ExamType.CET_PCM || college.examType === ExamType.CET_PCB) && "%"}
                                             </td>
                                         ))}
                                     </tr>
@@ -1601,24 +1627,6 @@ export default function Predictor() {
                                             ) : (
                                                 <span className="text-slate-400 font-bold italic">N/A</span>
                                             )}
-                                        </td>
-                                    ))}
-                                </tr>
-                                <tr>
-                                    <td className="p-6 font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50">Tuition Fee</td>
-                                    {selectedForCompare.map(college => (
-                                        <td key={college.id} className="p-6 border-b border-slate-50">
-                                            <div className="text-lg font-black text-slate-900">₹{college.fees?.tuition.toLocaleString()}</div>
-                                            <p className="text-[10px] text-slate-400 italic">Per annum</p>
-                                        </td>
-                                    ))}
-                                </tr>
-                                <tr>
-                                    <td className="p-6 font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50">Hostel Fee</td>
-                                    {selectedForCompare.map(college => (
-                                        <td key={college.id} className="p-6 border-b border-slate-50">
-                                            <div className="text-lg font-black text-slate-900">₹{college.fees?.hostel.toLocaleString()}</div>
-                                            <p className="text-[10px] text-slate-400 italic">Approximate</p>
                                         </td>
                                     ))}
                                 </tr>

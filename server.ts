@@ -86,45 +86,67 @@ async function startServer() {
     
     console.log(`Prediction request: rank=${rank}, category=${category}, domicile=${domicile}, examType=${examType}, quota=${quota}`);
     
-    const results = currentColleges.filter(college => {
+    const results = currentColleges.map(college => {
       // 1. Exam Type Match
-      if (college.examType !== examType) return false;
+      if (college.examType !== examType) return { ...college, _isMatch: false };
       
       // 2. Quota & State filtering logic
-      // Important: If searching for State Quota, we must honor eligibility
+      let isQuotaEligible = true;
       if (quota === "State Quota") {
-        // Students can apply for State Quota if:
-        // - They are local to that state
-        // - OR the college is All India Quota (which is open to all)
-        const isEligible = 
+        isQuotaEligible = 
           (college.quota === "State Quota" && college.state === domicile) ||
           (college.quota === "All India Quota");
-        
-        if (!isEligible) return false;
       } else if (quota === "All India Quota") {
-        // AIQ search only shows AIQ seats
-        if (college.quota !== "All India Quota") return false;
+        isQuotaEligible = college.quota === "All India Quota";
       }
+      
+      if (!isQuotaEligible) return { ...college, _isMatch: false };
       
       // 3. Category Cutoff Logic
       const cutoffRankObj = college.cutoffRank || {};
       const specificCutoff = cutoffRankObj[category];
       const generalCutoff = cutoffRankObj["General"] || cutoffRankObj["GENERAL"];
       
-      // Target rank for comparison
       const targetRank = specificCutoff !== undefined ? specificCutoff : generalCutoff;
-      
-      if (targetRank === undefined) return false;
+      if (targetRank === undefined) return { ...college, _isMatch: false };
 
-      // 4. Score Comparison
-      // Percentile/Score: Higher is better (CET-PCM, CET-PCB usually provide percentiles)
-      if (examType === "CET-PCM" || examType === "CET_PCB" || examType === "CET-PCB") {
-        return rank >= targetRank;
+      // 4. Score Comparison & Chance Calculation
+      let chance: "Excellent" | "Safe" | "Moderate" | "Risky" = "Moderate";
+      let isEligible = false;
+
+      const isPercentile = examType === "CET-PCM" || examType === "CET-PCB";
+
+      if (isPercentile) {
+        // Percentile: Higher is better
+        if (rank >= targetRank) {
+          isEligible = true;
+          if (rank >= targetRank + 3) chance = "Excellent";
+          else if (rank >= targetRank + 1) chance = "Safe";
+          else chance = "Moderate";
+        } else if (rank >= targetRank - 0.5) { // Very close margin for percentiles
+          isEligible = true; 
+          chance = "Risky";
+        }
+      } else {
+        // Rank: Lower is better
+        if (rank <= targetRank) {
+          isEligible = true;
+          if (rank <= targetRank * 0.75) chance = "Excellent";
+          else if (rank <= targetRank * 0.9) chance = "Safe";
+          else chance = "Moderate";
+        } else if (rank <= targetRank * 1.08) { // 8% margin for ranks
+          isEligible = true; 
+          chance = "Risky";
+        }
       }
-      
-      // rank (AIR): Lower is better (NEET/JEE ranks)
-      return rank <= targetRank;
-    });
+
+      return { 
+        ...college, 
+        _isMatch: isEligible,
+        predictionChance: chance,
+        cutoffUsed: targetRank
+      };
+    }).filter(c => c._isMatch);
 
     console.log(`Found ${results.length} results`);
     res.json(results);
