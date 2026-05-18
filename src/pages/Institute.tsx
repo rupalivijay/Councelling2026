@@ -14,6 +14,9 @@ export default function Institute() {
   const [currentUser, setCurrentUser] = React.useState<any>(null);
   const [allColleges, setAllColleges] = React.useState<College[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [selectedType, setSelectedType] = React.useState<string>('All');
+  const [selectedOwnership, setSelectedOwnership] = React.useState<string>('All');
+  const [selectedYear, setSelectedYear] = React.useState<string>('2026');
   const [isLoadingColleges, setIsLoadingColleges] = React.useState(true);
 
   React.useEffect(() => {
@@ -34,14 +37,42 @@ export default function Institute() {
   }, []);
 
   const filteredColleges = React.useMemo(() => {
-    if (!searchQuery.trim()) return allColleges.slice(0, 100); // Show first 100 by default
-    const query = searchQuery.toLowerCase();
-    return allColleges.filter(c => 
-      c.name.toLowerCase().includes(query) || 
-      c.city.toLowerCase().includes(query) ||
-      c.state.toLowerCase().includes(query)
-    ).slice(0, 100); // Limit results for performance
-  }, [allColleges, searchQuery]);
+    let filtered = allColleges;
+
+    // Type Filter
+    if (selectedType !== 'All') {
+      filtered = filtered.filter(c => c.type === selectedType);
+    }
+
+    // Search Query Filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(c => 
+        c.name.toLowerCase().includes(query) || 
+        c.city.toLowerCase().includes(query) ||
+        c.state.toLowerCase().includes(query) ||
+        (c.branch && c.branch.toLowerCase().includes(query))
+      );
+    }
+
+    // Ownership Filter
+    if (selectedOwnership !== 'All') {
+      filtered = filtered.filter(c => c.ownership === selectedOwnership);
+    }
+
+    // Year Filter
+    if (selectedYear !== '2026') {
+      const yearInt = parseInt(selectedYear);
+      filtered = filtered.filter(c => {
+        if (!c.historicalTrends) return false;
+        return Object.values(c.historicalTrends).some(trends => 
+          trends && trends.some(t => t.year === yearInt)
+        );
+      });
+    }
+
+    return filtered; // Show all filtered matches
+  }, [allColleges, searchQuery, selectedType, selectedOwnership, selectedYear]);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -138,21 +169,94 @@ export default function Institute() {
 
       {/* College Directory Section */}
       <section id="directory" className="mb-20">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
-          <div>
-            <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Institute Directory</h2>
-            <p className="text-slate-600 font-medium">Explore over 2,500+ premier medical and engineering colleges.</p>
+        <div className="flex flex-col space-y-6 mb-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div>
+              <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Institute Directory</h2>
+              <p className="text-slate-600 font-medium">Explore over 2,500+ premier medical and engineering colleges.</p>
+            </div>
+            
+            <div className="relative w-full md:w-96 group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+              <input 
+                type="text"
+                placeholder="Search by name or city..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-900 shadow-sm"
+              />
+            </div>
           </div>
-          
-          <div className="relative w-full md:w-96 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-            <input 
-              type="text"
-              placeholder="Search by name or city..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-900 shadow-sm"
-            />
+
+          <div className="flex flex-wrap gap-4 items-center p-4 bg-slate-50 border border-slate-100 rounded-3xl">
+            <div className="flex items-center gap-3">
+              <Building className="h-4 w-4 text-slate-400" />
+              <span className="text-xs font-black uppercase text-slate-400 tracking-wider">Category:</span>
+              <div className="flex gap-2">
+                {['All', 'Medical', 'Engineering', 'Pharmacy'].map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => setSelectedType(opt)}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                      selectedType === opt 
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-200" 
+                        : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                    )}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-black uppercase text-slate-400 tracking-wider">Ownership:</span>
+              <div className="flex gap-2">
+                {['All', 'Government', 'Private', 'Aided', 'Deemed'].map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => setSelectedOwnership(opt)}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                      selectedOwnership === opt 
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-200" 
+                        : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                    )}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 md:ml-auto">
+              <Target className="h-4 w-4 text-slate-400" />
+              <span className="text-xs font-black uppercase text-slate-400 tracking-wider">Year:</span>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600 transition-all cursor-pointer"
+              >
+                {['2026', '2025', '2024', '2023'].map(year => (
+                  <option key={year} value={year}>{year} Intake</option>
+                ))}
+              </select>
+            </div>
+            
+            {(selectedType !== 'All' || selectedOwnership !== 'All' || selectedYear !== '2026' || searchQuery !== '') && (
+              <button
+                onClick={() => {
+                  setSelectedType('All');
+                  setSelectedOwnership('All');
+                  setSelectedYear('2026');
+                  setSearchQuery('');
+                }}
+                className="ml-auto text-xs font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest flex items-center gap-2"
+              >
+                Reset All <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -181,7 +285,9 @@ export default function Institute() {
                       </div>
                       <span className={cn(
                         "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                        college.type === 'Medical' ? "bg-red-50 text-red-600" : "bg-teal-50 text-teal-600"
+                        college.type === 'Medical' ? "bg-red-50 text-red-600" : 
+                        college.type === 'Pharmacy' ? "bg-amber-50 text-amber-600" :
+                        "bg-teal-50 text-teal-600"
                       )}>
                         {college.type}
                       </span>
@@ -198,7 +304,10 @@ export default function Institute() {
                       </div>
                       <div className="flex items-center text-slate-500 text-sm font-bold">
                         <GraduationCap className="h-4 w-4 mr-2 text-slate-400" />
-                        {college.examType}
+                        {college.examType} {college.branch ? `• ${college.branch}` : ''}
+                      </div>
+                      <div className="text-[10px] font-black uppercase tracking-wider text-blue-600/60">
+                        {college.ownership}
                       </div>
                     </div>
                   </div>

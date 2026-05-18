@@ -176,7 +176,7 @@ async function startServer() {
             return (rank - a.cutoffUsed!) - (rank - b.cutoffUsed!);
           }
         })
-        .slice(0, 5)
+        .slice(0, 20)
         .map(c => ({
           ...c,
           predictionChance: "Risky" as const, // Treat as aspirational/risky
