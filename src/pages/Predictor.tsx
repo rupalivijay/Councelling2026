@@ -974,6 +974,24 @@ export default function Predictor() {
             </div>
           </div>
 
+          {filteredResults.some(c => c.isAspirational) && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-amber-50 border border-amber-200 p-6 rounded-[2.5rem] flex flex-col md:flex-row items-center gap-6 mb-8"
+            >
+              <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center shrink-0">
+                <Sparkles className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="text-center md:text-left">
+                <h4 className="text-sm font-black text-amber-900 uppercase tracking-tight mb-1">Aspirational Suggestions Mode</h4>
+                <p className="text-xs font-medium text-amber-700 leading-relaxed">
+                  We couldn't find exact matches for your rank. Showing colleges with the closest historical cutoffs. These are "Aspirational" choices where you might have a chance through subsequent rounds or specific seat categories.
+                </p>
+              </div>
+            </motion.div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
             {filteredResults.map((college, idx) => (
               <motion.div
@@ -1125,6 +1143,11 @@ export default function Predictor() {
                             "text-amber-600"
                           )}>
                             Chance: {college.predictionChance}
+                            {college.isAspirational && (
+                              <span className="ml-2 text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100 font-black uppercase tracking-tighter not-italic inline-block align-middle">
+                                Aspirational
+                              </span>
+                            )}
                           </span>
                         </div>
                         <div className="mt-1 w-32 h-1 bg-slate-100 rounded-full overflow-hidden">

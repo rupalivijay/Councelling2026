@@ -146,10 +146,46 @@ async function startServer() {
         predictionChance: chance,
         cutoffUsed: targetRank
       };
-    }).filter(c => c._isMatch);
+    });
+    
+    let finalResults = results.filter(c => c._isMatch);
+    
+    // If no matches found, provide top 5 closest "Aspirational" colleges
+    if (finalResults.length === 0) {
+      console.log("No exact matches, finding aspirational results...");
+      const isPercentile = examType === "CET-PCM" || examType === "CET-PCB";
+      
+      finalResults = results
+        .filter(c => {
+          // Re-verify basic eligibility (exam type and quota)
+          if (c.examType !== examType) return false;
+          let isQuotaEligible = true;
+          if (quota === "State Quota") {
+            isQuotaEligible = (c.quota === "State Quota" && c.state === domicile) || (c.quota === "All India Quota");
+          } else if (quota === "All India Quota") {
+            isQuotaEligible = c.quota === "All India Quota";
+          }
+          return isQuotaEligible && c.cutoffUsed !== undefined;
+        })
+        .sort((a, b) => {
+          if (isPercentile) {
+            // Closest to rank (but above)
+            return (a.cutoffUsed! - rank) - (b.cutoffUsed! - rank);
+          } else {
+            // Closest to rank (but below)
+            return (rank - a.cutoffUsed!) - (rank - b.cutoffUsed!);
+          }
+        })
+        .slice(0, 5)
+        .map(c => ({
+          ...c,
+          predictionChance: "Risky" as const, // Treat as aspirational/risky
+          isAspirational: true
+        }));
+    }
 
-    console.log(`Found ${results.length} results`);
-    res.json(results);
+    console.log(`Found ${finalResults.length} results`);
+    res.json(finalResults);
   });
 
   app.get("/api/colleges", (req, res) => {

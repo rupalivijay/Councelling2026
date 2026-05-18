@@ -2826,5 +2826,47 @@
     "cutoffRank": { "General": 22000, "OBC": 28000, "SC": 45000, "ST": 65000, "EWS": 24000 },
     "link": "https://www.nitc.ac.in/",
     "fees": { "tuition": 135000, "hostel": 30000 }
+  },
+  {
+    "id": "skn-medical-pune",
+    "name": "Smt. Kashibai Navale Medical College",
+    "state": "Maharashtra",
+    "city": "Pune",
+    "examType": "NEET",
+    "type": "Medical",
+    "quota": "State Quota",
+    "ownership": "Private",
+    "choiceCode": "01121",
+    "cutoffRank": { "General": 95000, "OBC": 110000, "SC": 350000, "ST": 450000, "EWS": 105000 },
+    "link": "https://sknmcgh.org/",
+    "fees": { "tuition": 1350000, "hostel": 80000 }
+  },
+  {
+    "id": "miimer-talegaon",
+    "name": "MIIMER Talegaon",
+    "state": "Maharashtra",
+    "city": "Talegaon",
+    "examType": "NEET",
+    "type": "Medical",
+    "quota": "State Quota",
+    "ownership": "Private",
+    "choiceCode": "01125",
+    "cutoffRank": { "General": 110000, "OBC": 130000, "SC": 380000, "ST": 500000, "EWS": 120000 },
+    "link": "https://mitmimer.com/",
+    "fees": { "tuition": 1150000, "hostel": 90000 }
+  },
+  {
+    "id": "nkpsimp-nagpur",
+    "name": "NKP Salve Medical College",
+    "state": "Maharashtra",
+    "city": "Nagpur",
+    "examType": "NEET",
+    "type": "Medical",
+    "quota": "State Quota",
+    "ownership": "Private",
+    "choiceCode": "01118",
+    "cutoffRank": { "General": 85000, "OBC": 105000, "SC": 320000, "ST": 420000, "EWS": 95000 },
+    "link": "https://nkpsims.edu.in/",
+    "fees": { "tuition": 950000, "hostel": 70000 }
   }
 ]

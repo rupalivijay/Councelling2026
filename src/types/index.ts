@@ -74,6 +74,7 @@ export interface College {
   };
   predictionChance?: "Excellent" | "Safe" | "Moderate" | "Risky";
   cutoffUsed?: number;
+  isAspirational?: boolean;
 }
 
 export interface PredictionRequest {

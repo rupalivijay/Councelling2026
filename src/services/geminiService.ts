@@ -12,7 +12,7 @@ export async function getAIInsights(
   const topColleges = results.slice(0, 8).map(c => ({
     name: c.name,
     city: c.city,
-    cutoff: c.cutoffRank[category],
+    cutoff: c.cutoffRank ? (c.cutoffRank[category] || c.cutoffRank["General" as Category]) : "N/A",
     chance: c.predictionChance,
     target: c.cutoffUsed,
     type: c.type,
@@ -72,7 +72,7 @@ export async function getPersonalizedSuggestions(
     name: c.name,
     state: c.state,
     ownership: c.ownership,
-    cutoff: c.cutoffRank[category]
+    cutoff: c.cutoffRank ? (c.cutoffRank[category] || c.cutoffRank["General" as Category]) : "N/A"
   }));
 
   const prompt = `
